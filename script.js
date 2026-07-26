@@ -5,21 +5,24 @@ const maxEnergy = 1000;
 const clickPower = 1;
 const energyRegenSpeed = 3;
 
-// Реальные награды (Биржа Лидеров)
-const rewards = [
-    { id: 'merch_sticker', name: 'Стикерпак "Новые"', desc: 'Эксклюзивный набор стикеров для Telegram', cost: 5000, icon: '🎨' },
-    { id: 'merch_cap', name: 'Фирменная кепка', desc: 'Бирюзовая кепка с логотипом партии', cost: 25000, icon: '🧢' },
-    { id: 'edu_course', name: 'Курс "Политтехнолог"', desc: 'Доступ к закрытому образовательному модулю', cost: 50000, icon: '🎓' },
-    { id: 'internship', name: 'Стажировка в Госдуме', desc: 'Реальная возможность попасть в аппарат (Топ-100)', cost: 100000, icon: '🏛️' },
-    { id: 'meeting_leader', name: 'Завтрак с лидером', desc: 'Личная встреча с руководством движения', cost: 500000, icon: '🤝' }
+// Данные для Лиги Регионов (Демо-данные)
+const regions = [
+    { id: 'msk', name: 'Москва', score: 1540000 },
+    { id: 'spb', name: 'Санкт-Петербург', score: 980000 },
+    { id: 'nsk', name: 'Новосибирская обл.', score: 450000 },
+    { id: 'ekb', name: 'Свердловская обл.', score: 320000 },
+    { id: 'kzn', name: 'Республика Татарстан', score: 210000 },
 ];
+
+// Для демо считаем, что игрок из Новосибирска
+const myRegionId = 'nsk'; 
 
 const scoreEl = document.getElementById('score');
 const energyTextEl = document.getElementById('energyText');
 const energyFillEl = document.getElementById('energyFill');
 const clickArea = document.getElementById('clickArea');
 const slonBtn = document.getElementById('slonBtn');
-const rewardsList = document.getElementById('rewardsList');
+const leaderboardList = document.getElementById('leaderboardList');
 
 // Загрузка сохранений
 function loadGame() {
@@ -41,7 +44,7 @@ function updateUI() {
         const percentage = (energy / maxEnergy) * 100;
         energyFillEl.style.width = `${percentage}%`;
     }
-    renderRewards(); // Обновляем биржу при изменении счета
+    renderLeaderboard();
 }
 
 // Обработка тапа
@@ -50,6 +53,12 @@ function handleTap(e) {
     if (energy >= clickPower) {
         score += clickPower;
         energy -= clickPower;
+        
+        // В реальной игре здесь был бы запрос к API для обновления счета региона
+        // Для демо просто увеличиваем счет нашего региона локально
+        const myRegion = regions.find(r => r.id === myRegionId);
+        if (myRegion) myRegion.score += clickPower;
+
         updateUI();
         saveGame();
         
@@ -76,43 +85,33 @@ function createPopUp(x, y) {
     setTimeout(() => { pop.remove(); }, 600);
 }
 
-// Логика Биржи Лидеров
-function claimReward(id) {
-    const reward = rewards.find(r => r.id === id);
-    if (reward && score >= reward.cost) {
-        // В реальной игре здесь был бы запрос к API
-        alert(`Поздравляем! Вы оформили заявку на "${reward.name}". Свяжитесь с куратором для получения.`);
-        // Можно добавить списание очков, если нужно: score -= reward.cost;
-    } else {
-        alert('Недостаточно голосов для получения этой награды!');
-    }
-}
-
-function renderRewards() {
-    if (!rewardsList) return;
-    rewardsList.innerHTML = '';
+// Логика Лиги Регионов
+function renderLeaderboard() {
+    if (!leaderboardList) return;
+    leaderboardList.innerHTML = '';
     
-    rewards.forEach(reward => {
-        const canClaim = score >= reward.cost;
+    // Сортируем регионы по очкам
+    const sortedRegions = [...regions].sort((a, b) => b.score - a.score);
+    
+    sortedRegions.forEach((region, index) => {
+        const isMyRegion = region.id === myRegionId;
         const card = document.createElement('div');
-        card.className = 'reward-card';
+        card.className = `region-card ${isMyRegion ? 'my-region' : ''}`;
         
+        let rankIcon = index + 1;
+        if (index === 0) rankIcon = '🥇';
+        if (index === 1) rankIcon = '🥈';
+        if (index === 2) rankIcon = '🥉';
+
         card.innerHTML = `
-            <div class="reward-header">
-                <span class="reward-icon">${reward.icon}</span>
-                <div>
-                    <div class="reward-title">${reward.name}</div>
-                    <div class="reward-desc">${reward.desc}</div>
-                </div>
+            <div class="region-rank">${rankIcon}</div>
+            <div class="region-info">
+                <div class="region-name">${region.name} ${isMyRegion ? '(Вы)' : ''}</div>
+                <div class="region-score">${region.score.toLocaleString()} голосов</div>
             </div>
-            <div class="reward-footer">
-                <span class="reward-cost">${reward.cost.toLocaleString()} 🗳️</span>
-                <button class="claim-reward-btn" ${canClaim ? '' : 'disabled'} onclick="claimReward('${reward.id}')">
-                    ${canClaim ? 'Получить' : 'Недоступно'}
-                </button>
-            </div>
+            ${index < 3 ? '<span class="region-badge">TOP</span>' : ''}
         `;
-        rewardsList.appendChild(card);
+        leaderboardList.appendChild(card);
     });
 }
 
