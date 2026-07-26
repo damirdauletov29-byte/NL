@@ -26,7 +26,7 @@ const upgrades = [
     { id: 'tv', name: 'Эфир на ТВ', baseCost: 15000, bonus: 8000, icon: '📺', level: 0 },
 ];
 
-// Задания с правильными ссылками
+// Задания с ПРАВИЛЬНЫМИ ссылками
 const tasks = [
     { id: 'site', name: 'Официальный сайт', reward: 5000, icon: '🌐', link: 'https://newpeople.ru/', type: 'link' },
     { id: 'tg_channel', name: 'Telegram канал', reward: 10000, icon: '✈️', link: 'https://tele.click/partynewpeople', type: 'sub' },
