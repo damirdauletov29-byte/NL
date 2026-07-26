@@ -1,9 +1,27 @@
+// --- ИНИЦИАЛИЗАЦИЯ TELEGRAM ---
+const tg = window.Telegram.WebApp;
+tg.expand(); // Раскрываем приложение на весь экран
+
+// Получаем данные пользователя
+const user = tg.initDataUnsafe?.user;
+if (user) {
+    const greetingEl = document.getElementById('userGreeting');
+    if (greetingEl) {
+        greetingEl.textContent = `Привет, ${user.first_name || 'Сторонник'}!`;
+    }
+}
+
+// Настраиваем цвета под тему Telegram
+document.documentElement.style.setProperty('--tg-theme-bg-color', tg.backgroundColor || '#0d1b1e');
+document.documentElement.style.setProperty('--tg-theme-text-color', tg.textColor || '#ffffff');
+document.documentElement.style.setProperty('--tg-theme-link-color', tg.themeParams.link_color || '#00cbd6');
+
 // --- КОНФИГУРАЦИЯ ИГРЫ ---
 let score = 0;
 let energy = 1000;
 const maxEnergy = 1000;
 let clickPower = 1;
-let profitPerHour = 0; // Голосов в час
+let profitPerHour = 0;
 const energyRegenSpeed = 3;
 
 // База данных улучшений
@@ -39,7 +57,6 @@ function loadGame() {
     
     if (savedUpgrades) {
         const parsedUpgrades = JSON.parse(savedUpgrades);
-        // Обновляем уровни в текущем массиве
         parsedUpgrades.forEach((saved, index) => {
             if (upgrades[index]) upgrades[index].level = saved.level;
         });
@@ -65,7 +82,7 @@ function updateUI() {
         energyFillEl.style.width = `${percentage}%`;
     }
     
-    renderUpgrades(); // Перерисовываем кнопки, чтобы обновить их доступность
+    renderUpgrades();
 }
 
 // --- ЛОГИКА ТАПА ---
@@ -85,6 +102,9 @@ function handleTap(e) {
             clientY = e.clientY;
         }
         createPopUp(clientX, clientY);
+        
+        // Вибрация при тапе (нативная функция Telegram)
+        tg.HapticFeedback.impactOccurred('light');
     }
 }
 
@@ -101,7 +121,6 @@ function createPopUp(x, y) {
 
 // --- СИСТЕМА УЛУЧШЕНИЙ ---
 function getUpgradeCost(upgrade) {
-    // Цена растет с каждым уровнем (формула: база * 1.15^уровень)
     return Math.floor(upgrade.baseCost * Math.pow(1.15, upgrade.level));
 }
 
@@ -113,15 +132,16 @@ function buyUpgrade(index) {
         score -= cost;
         upgrade.level++;
         profitPerHour += upgrade.bonus;
-        
-        // Небольшой бонус к силе клика за каждое улучшение
         clickPower += 1; 
         
         saveGame();
         updateUI();
         
-        // Вибрация при покупке (если поддерживается)
-        if (window.navigator.vibrate) window.navigator.vibrate(50);
+        // Успешная покупка
+        tg.HapticFeedback.notificationOccurred('success');
+    } else {
+        // Недостаточно средств
+        tg.HapticFeedback.notificationOccurred('error');
     }
 }
 
@@ -151,16 +171,12 @@ function renderUpgrades() {
 
 // --- ПАССИВНЫЙ ДОХОД И РЕГЕНЕРАЦИЯ ---
 setInterval(() => {
-    // Регенерация энергии
     if (energy < maxEnergy) {
         energy = Math.min(maxEnergy, energy + energyRegenSpeed);
     }
-    
-    // Начисление пассивного дохода (делим на 3600, т.к. profitPerHour - это доход за час)
     if (profitPerHour > 0) {
         score += profitPerHour / 3600;
     }
-    
     updateUI();
     saveGame();
 }, 1000);
@@ -186,6 +202,12 @@ if (slonBtn) {
     slonBtn.addEventListener('touchstart', handleTap, { passive: false });
     slonBtn.addEventListener('mousedown', handleTap);
 }
+
+// Настройка главной кнопки Telegram
+tg.MainButton.setText("Вернуться в меню");
+tg.MainButton.onClick(() => {
+    tg.close();
+});
 
 loadGame();
 updateUI();
