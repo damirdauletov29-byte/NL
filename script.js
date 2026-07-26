@@ -28,9 +28,9 @@ const upgrades = [
 
 // Задания с ПРАВИЛЬНЫМИ ссылками
 const tasks = [
-    { id: 'site', name: 'Официальный сайт', reward: 5000, icon: '🌐', link: 'https://novye.lyudi.ru/', type: 'link' },
-    { id: 'tg_channel', name: 'Telegram канал', reward: 10000, icon: '✈️', link: 'https://t.me/novieludy', type: 'sub' },
-    { id: 'vk_group', name: 'Группа ВКонтакте', reward: 7500, icon: '🔵', link: 'https://vk.com/novieludy', type: 'sub' },
+    { id: 'site', name: 'Официальный сайт', reward: 5000, icon: '🌐', link: 'https://newpeople.ru/', type: 'link' },
+    { id: 'tg_channel', name: 'Telegram канал', reward: 10000, icon: '✈️', link: 'https://tele.click/partynewpeople', type: 'sub' },
+    { id: 'vk_group', name: 'Группа ВКонтакте', reward: 7500, icon: '🔵', link: 'https://vk.com/party.newpeople', type: 'sub' },
 ];
 
 // Элементы DOM
