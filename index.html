@@ -38,24 +38,40 @@
         .balance-container {
             font-size: 42px;
             font-weight: 800;
-            margin: 10px 0;
+            margin: 5px 0;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 10px;
         }
 
+        .income-view {
+            font-size: 14px;
+            color: #a0a0a0;
+            margin-bottom: 10px;
+        }
+
         .currency {
             color: #00b4d8;
         }
 
-        .click-area {
-            position: relative;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+        /* Экраны */
+        .screen {
             width: 100%;
             flex-grow: 1;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .screen.active {
+            display: flex;
+        }
+
+        /* Главный экран кликера */
+        #main-screen {
+            flex-direction: column;
         }
 
         .coin-btn {
@@ -85,6 +101,61 @@
             line-height: 1.2;
         }
 
+        /* Экран прокачки */
+        #upgrade-screen {
+            flex-direction: column;
+            justify-content: flex-start;
+            overflow-y: auto;
+            padding: 10px 0;
+            gap: 12px;
+        }
+
+        .card {
+            width: 90%;
+            max-width: 350px;
+            background-color: #1e1e1e;
+            border-radius: 12px;
+            padding: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid #2d2d2d;
+        }
+
+        .card-info {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .card-name {
+            font-weight: bold;
+            font-size: 16px;
+        }
+
+        .card-profit {
+            font-size: 12px;
+            color: #00b4d8;
+        }
+
+        .card-cost {
+            font-size: 13px;
+            color: #e0e0e0;
+            background-color: #2a2a2a;
+            padding: 6px 12px;
+            border-radius: 20px;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.2s;
+        }
+
+        .card-cost:hover {
+            background-color: #00b4d8;
+            color: #fff;
+        }
+
+        /* Подвал */
         .footer {
             width: 100%;
             display: flex;
@@ -172,12 +243,19 @@
             <span id="balance-view">0</span>
             <span class="currency">ПО</span>
         </div>
+        <div class="income-view">В час: +<span id="income-view">0</span> ПО</div>
     </div>
 
-    <div class="click-area">
+    <!-- ГЛАВНЫЙ ЭКРАН (КЛИКЕР) -->
+    <div class="screen active" id="main-screen">
         <button class="coin-btn" id="coin-trigger">
             <div class="coin-inner">НОВЫЕ<br>ЛЮДИ</div>
         </button>
+    </div>
+
+    <!-- ЭКРАН ПРОКАЧКИ (МАГАЗИН) -->
+    <div class="screen" id="upgrade-screen">
+        <!-- Карточки будут создаваться автоматически через JavaScript -->
     </div>
 
     <div class="footer">
@@ -192,10 +270,10 @@
         </div>
 
         <div class="menu">
-            <button class="menu-item active">🏠 Главная</button>
-            <button class="menu-item">📈 Прокачка</button>
-            <button class="menu-item">🎯 Задания</button>
-            <button class="menu-item">🏆 Топ</button>
+            <button class="menu-item active" id="btn-main">🏠 Главная</button>
+            <button class="menu-item" id="btn-upgrade">📈 Прокачка</button>
+            <button class="menu-item" style="opacity: 0.4; cursor: not-allowed;">🎯 Задания</button>
+            <button class="menu-item" style="opacity: 0.4; cursor: not-allowed;">🏆 Топ</button>
         </div>
     </div>
 
