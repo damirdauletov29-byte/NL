@@ -5,56 +5,72 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Тапай за Новых!</title>
 <style>
-/* ... (Ваши старые стили остаются без изменений) ... */
+/* --- БАЗОВЫЕ НАСТРОЙКИ --- */
 * { box-sizing: border-box; user-select: none; -webkit-user-select: none; margin: 0; padding: 0; }
-body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background: linear-gradient(135deg, #0d1b1e 0%, #00a896 100%); color: #ffffff; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+body { 
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
+    background: linear-gradient(135deg, #0d1b1e 0%, #00a896 100%); 
+    color: #ffffff; 
+    height: 100vh; display: flex; flex-direction: column; overflow: hidden; 
+}
+
+/* --- ЭКРАНЫ И ШАПКА --- */
 .screen { display: none; flex-direction: column; align-items: center; justify-content: space-between; flex: 1; padding: 20px 20px 90px 20px; height: calc(100vh - 75px); }
 .screen.active { display: flex; }
-.global-header { text-align: center; padding: 15px 0 5px; width: 100%; background: rgba(13, 27, 30, 0.4); backdrop-filter: blur(10px); }
+.global-header { text-align: center; padding: 15px 0 5px; width: 100%; background: rgba(13, 27, 30, 0.4); backdrop-filter: blur(10px); z-index: 5; }
 .title { font-size: 13px; text-transform: uppercase; letter-spacing: 2px; color: #e0f7f4; opacity: 0.8; margin-bottom: 3px; }
 .score-container { display: flex; align-items: center; justify-content: center; gap: 10px; }
 .score { font-size: 36px; font-weight: 800; text-shadow: 0 0 15px rgba(255,255,255,0.3); }
+
+/* --- РАНГИ --- */
+.rank-container { display: flex; flex-direction: column; align-items: center; margin-top: 10px; width: 100%; }
+.rank-info { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: bold; color: #00cbd6; margin-bottom: 5px; }
+.level-progress-bar { width: 80%; height: 6px; background: rgba(255, 255, 255, 0.1); border-radius: 5px; overflow: hidden; }
+.level-fill { height: 100%; width: 0%; background: #00ffcc; border-radius: 5px; transition: width 0.3s ease; }
+
+/* --- КНОПКА-СЛОН (ВАЖНО: Z-INDEX) --- */
 .click-area { position: relative; width: 75vw; max-width: 300px; aspect-ratio: 1; display: flex; align-items: center; justify-content: center; margin: auto 0; z-index: 10; }
-.slon-btn { width: 100%; height: 100%; border-radius: 50%; background-image: url('slon.jpg'); background-size: cover; background-position: center; border: 6px solid #00cbd6; box-shadow: 0 0 30px rgba(0, 203, 214, 0.4); cursor: pointer; transition: transform 0.05s ease; outline: none; -webkit-tap-highlight-color: transparent; z-index: 10; }
+.slon-btn { 
+    width: 100%; height: 100%; border-radius: 50%; background-image: url('slon.jpg'); background-size: cover; background-position: center; 
+    border: 6px solid #00cbd6; box-shadow: 0 0 30px rgba(0, 203, 214, 0.4); cursor: pointer; transition: transform 0.05s ease; outline: none; 
+    -webkit-tap-highlight-color: transparent; z-index: 10; 
+}
 .slon-btn:active { transform: scale(0.95); }
+
+/* --- АНИМАЦИИ И ЭНЕРГИЯ --- */
 .tap-pop { position: absolute; font-size: 32px; font-weight: 900; color: #00cbd6; text-shadow: 0 0 10px rgba(0,0,0,0.5); pointer-events: none; animation: floatUp 0.6s ease-out forwards; z-index: 20; }
 @keyframes floatUp { 0% { opacity: 1; transform: translateY(0) scale(1); } 100% { opacity: 0; transform: translateY(-120px) scale(1.2); } }
-.footer-stats { width: 100%; max-width: 400px; }
+.footer-stats { width: 100%; max-width: 400px; z-index: 5; }
 .energy-text { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 8px; font-weight: bold; }
 .progress-bar { width: 100%; height: 12px; background: rgba(255, 255, 255, 0.1); border-radius: 10px; overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.1); }
 .progress-fill { height: 100%; width: 100%; background: linear-gradient(90deg, #00cbd6, #00ffcc); border-radius: 10px; transition: width 0.1s ease; }
+
+/* --- МЕНЮ --- */
 .navbar { position: fixed; bottom: 15px; left: 5%; width: 90%; max-width: 400px; height: 65px; background: rgba(20, 40, 43, 0.85); backdrop-filter: blur(15px); border: 1px solid rgba(0, 203, 214, 0.2); border-radius: 20px; display: flex; justify-content: space-around; align-items: center; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4); z-index: 1000; }
 .nav-item { display: flex; flex-direction: column; align-items: center; justify-content: center; color: #a2b7b5; text-decoration: none; font-size: 11px; font-weight: 500; width: 22%; height: 100%; cursor: pointer; transition: all 0.2s ease; -webkit-tap-highlight-color: transparent; }
 .nav-icon { font-size: 22px; margin-bottom: 2px; transition: transform 0.2s ease; }
 .nav-item.active { color: #00ffcc; text-shadow: 0 0 10px rgba(0, 255, 204, 0.3); }
 .nav-item.active .nav-icon { transform: scale(1.15); }
 
-/* --- СТИЛИ ДЛЯ ЕЖЕДНЕВНОГО БОНУСА --- */
-.modal-overlay {
-    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(0, 0, 0, 0.8); backdrop-filter: blur(5px);
-    display: none; align-items: center; justify-content: center; z-index: 2000;
-}
+/* --- КАРТОЧКИ УЛУЧШЕНИЙ --- */
+.upgrades-list { width: 100%; max-width: 400px; display: flex; flex-direction: column; gap: 12px; padding-bottom: 20px; }
+.upgrade-card { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(0, 203, 214, 0.1); border-radius: 15px; padding: 12px; display: flex; align-items: center; gap: 12px; }
+.upgrade-icon { width: 50px; height: 50px; background: rgba(0, 203, 214, 0.1); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 24px; }
+.upgrade-info { flex: 1; }
+.upgrade-name { font-weight: bold; font-size: 15px; margin-bottom: 4px; }
+.upgrade-bonus { font-size: 12px; color: #00cbd6; }
+.upgrade-cost { background: #00cbd6; color: #0d1b1e; padding: 6px 12px; border-radius: 8px; font-weight: bold; font-size: 13px; min-width: 70px; text-align: center; }
+.upgrade-card.disabled { opacity: 0.5; filter: grayscale(1); }
+
+/* --- МОДАЛЬНОЕ ОКНО БОНУСА --- */
+.modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.8); backdrop-filter: blur(5px); display: none; align-items: center; justify-content: center; z-index: 2000; }
 .modal-overlay.active { display: flex; }
-.daily-modal {
-    background: linear-gradient(135deg, #1a2c30 0%, #00a896 100%);
-    width: 85%; max-width: 320px; padding: 25px; border-radius: 25px;
-    text-align: center; border: 2px solid #00cbd6;
-    box-shadow: 0 0 40px rgba(0, 203, 214, 0.3);
-    animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
+.daily-modal { background: linear-gradient(135deg, #1a2c30 0%, #00a896 100%); width: 85%; max-width: 320px; padding: 25px; border-radius: 25px; text-align: center; border: 2px solid #00cbd6; box-shadow: 0 0 40px rgba(0, 203, 214, 0.3); animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
 @keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 .daily-title { font-size: 20px; font-weight: 800; margin-bottom: 15px; color: #fff; }
-.reward-box {
-    background: rgba(255, 255, 255, 0.1); border-radius: 15px; padding: 20px;
-    margin: 15px 0; border: 1px dashed #00cbd6;
-}
+.reward-box { background: rgba(255, 255, 255, 0.1); border-radius: 15px; padding: 20px; margin: 15px 0; border: 1px dashed #00cbd6; }
 .reward-amount { font-size: 32px; font-weight: 900; color: #00ffcc; display: block; margin-top: 5px; }
-.claim-btn {
-    background: #00cbd6; color: #0d1b1e; border: none; padding: 12px 30px;
-    border-radius: 12px; font-size: 16px; font-weight: bold; cursor: pointer;
-    width: 100%; transition: transform 0.1s;
-}
+.claim-btn { background: #00cbd6; color: #0d1b1e; border: none; padding: 12px 30px; border-radius: 12px; font-size: 16px; font-weight: bold; cursor: pointer; width: 100%; transition: transform 0.1s; }
 .claim-btn:active { transform: scale(0.95); }
 </style>
 </head>
@@ -64,6 +80,15 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helve
     <div class="title">Собрано голосов</div>
     <div class="score-container">
         <span class="score" id="score">0</span>
+    </div>
+    <div class="rank-container">
+        <div class="rank-info">
+            <span class="rank-icon" id="rankIcon">👶</span>
+            <span id="rankName">Новичок</span>
+        </div>
+        <div class="level-progress-bar">
+            <div class="level-fill" id="levelFill"></div>
+        </div>
     </div>
 </div>
 
@@ -83,10 +108,27 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helve
     </div>
 </div>
 
-<!-- Остальные экраны (Прокачка, Задания, Друзья) остаются без изменений -->
-<div class="screen" id="screen-upgrade"><div class="placeholder-content"><h2>📈 Штаб партии</h2><p>Здесь будут карточки улучшений.</p></div></div>
-<div class="screen" id="screen-tasks"><div class="placeholder-content"><h2>💼 Поручения</h2><p>Выполняйте задания.</p></div></div>
-<div class="screen" id="screen-friends"><div class="placeholder-content"><h2>👥 Сторонники</h2><p>Приглашайте друзей.</p></div></div>
+<!-- ЭКРАН 2: ПРОКАЧКА -->
+<div class="screen" id="screen-upgrade">
+    <h2 style="margin-bottom: 15px; color: #00cbd6;">📈 Штаб партии</h2>
+    <div class="upgrades-list" id="upgradesList"></div>
+</div>
+
+<!-- ЭКРАН 3: КВЕСТЫ -->
+<div class="screen" id="screen-tasks">
+    <div class="placeholder-content">
+        <h2>💼 Поручения</h2>
+        <p>Выполняйте задания: подпишитесь на каналы партии, зовите сторонников и получайте бонусы.</p>
+    </div>
+</div>
+
+<!-- ЭКРАН 4: ДРУЗЬЯ -->
+<div class="screen" id="screen-friends">
+    <div class="placeholder-content">
+        <h2>👥 Сторонники</h2>
+        <p>Приглашайте друзей по реферальной ссылке и получайте процент от их кликов!</p>
+    </div>
+</div>
 
 <nav class="navbar">
     <div class="nav-item active" data-screen="screen-tap"><span class="nav-icon">🐘</span><span>Тап</span></div>
@@ -108,6 +150,252 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helve
     </div>
 </div>
 
-<script src="script.js"></script>
+<script>
+// --- КОНФИГУРАЦИЯ ---
+let score = 0;
+let energy = 1000;
+const maxEnergy = 1000;
+let clickPower = 1;
+let profitPerHour = 0;
+const energyRegenSpeed = 3;
+
+// Ранги
+const ranks = [
+    { name: "Новичок", minScore: 0, icon: "👶" },
+    { name: "Активист", minScore: 500, icon: "🌱" },
+    { name: "Агитатор", minScore: 2500, icon: "📢" },
+    { name: "Организатор", minScore: 10000, icon: "🤝" },
+    { name: "Лидер ячейки", minScore: 50000, icon: "⭐" },
+    { name: "Политик", minScore: 150000, icon: "🏛️" },
+    { name: "Лидер движения", minScore: 1000000, icon: "🦁" }
+];
+
+// Улучшения
+const upgrades = [
+    { id: 'leaflets', name: 'Печать листовок', baseCost: 100, bonus: 100, icon: '📄', level: 0 },
+    { id: 'social', name: 'SMM-менеджер', baseCost: 500, bonus: 400, icon: '📱', level: 0 },
+    { id: 'meeting', name: 'Организация митинга', baseCost: 2000, bonus: 1500, icon: '🎤', level: 0 },
+    { id: 'office', name: 'Аренда штаба', baseCost: 5000, bonus: 3000, icon: '🏢', level: 0 },
+    { id: 'tv', name: 'Эфир на ТВ', baseCost: 15000, bonus: 8000, icon: '📺', level: 0 },
+];
+
+// Награды по дням
+const dailyRewards = [500, 1000, 2500, 5000, 10000, 25000, 50000];
+
+// Элементы DOM
+const scoreEl = document.getElementById('score');
+const energyTextEl = document.getElementById('energyText');
+const energyFillEl = document.getElementById('energyFill');
+const clickArea = document.getElementById('clickArea');
+const slonBtn = document.getElementById('slonBtn');
+const rankNameEl = document.getElementById('rankName');
+const rankIconEl = document.getElementById('rankIcon');
+const levelFillEl = document.getElementById('levelFill');
+const upgradesList = document.getElementById('upgradesList');
+const dailyModal = document.getElementById('dailyModal');
+const dayNumEl = document.getElementById('dayNum');
+const rewardAmountEl = document.getElementById('rewardAmount');
+const claimBtn = document.getElementById('claimBtn');
+
+// --- СИСТЕМА СОХРАНЕНИЯ ---
+function loadGame() {
+    const savedScore = localStorage.getItem('nl_score');
+    const savedEnergy = localStorage.getItem('nl_energy');
+    const savedProfit = localStorage.getItem('nl_profit');
+    const savedClickPower = localStorage.getItem('nl_clickPower');
+    const savedUpgrades = localStorage.getItem('nl_upgrades');
+
+    if (savedScore) score = parseInt(savedScore);
+    if (savedEnergy) energy = parseInt(savedEnergy);
+    if (savedProfit) profitPerHour = parseInt(savedProfit);
+    if (savedClickPower) clickPower = parseInt(savedClickPower);
+    
+    if (savedUpgrades) {
+        const parsedUpgrades = JSON.parse(savedUpgrades);
+        parsedUpgrades.forEach((saved, index) => {
+            if (upgrades[index]) upgrades[index].level = saved.level;
+        });
+    }
+}
+
+function saveGame() {
+    localStorage.setItem('nl_score', score);
+    localStorage.setItem('nl_energy', energy);
+    localStorage.setItem('nl_profit', profitPerHour);
+    localStorage.setItem('nl_clickPower', clickPower);
+    localStorage.setItem('nl_upgrades', JSON.stringify(upgrades.map(u => ({ id: u.id, level: u.level }))));
+}
+
+// --- ОБНОВЛЕНИЕ ИНТЕРФЕЙСА ---
+function updateUI() {
+    scoreEl.textContent = Math.floor(score).toLocaleString('ru-RU');
+    
+    // Энергия
+    if (energyTextEl && energyFillEl) {
+        energyTextEl.textContent = `${Math.floor(energy)} / ${maxEnergy}`;
+        const percentage = (energy / maxEnergy) * 100;
+        energyFillEl.style.width = `${percentage}%`;
+    }
+
+    // Ранг
+    let currentRankIndex = 0;
+    for (let i = 0; i < ranks.length; i++) {
+        if (score >= ranks[i].minScore) currentRankIndex = i;
+        else break;
+    }
+    const currentRank = ranks[currentRankIndex];
+    const nextRank = ranks[currentRankIndex + 1];
+    rankNameEl.textContent = currentRank.name;
+    rankIconEl.textContent = currentRank.icon;
+
+    if (nextRank) {
+        const progress = ((score - currentRank.minScore) / (nextRank.minScore - currentRank.minScore)) * 100;
+        levelFillEl.style.width = `${Math.min(100, Math.max(0, progress))}%`;
+    } else {
+        levelFillEl.style.width = '100%';
+    }
+
+    renderUpgrades();
+}
+
+// --- ЛОГИКА ТАПА ---
+function handleTap(e) {
+    e.preventDefault();
+    if (energy >= clickPower) {
+        score += clickPower;
+        energy -= clickPower;
+        updateUI();
+        
+        let clientX, clientY;
+        if (e.touches && e.touches.length > 0) {
+            clientX = e.touches[e.touches.length - 1].clientX;
+            clientY = e.touches[e.touches.length - 1].clientY;
+        } else {
+            clientX = e.clientX;
+            clientY = e.clientY;
+        }
+        createPopUp(clientX, clientY);
+        if (window.navigator.vibrate) window.navigator.vibrate(10);
+    }
+}
+
+function createPopUp(x, y) {
+    const pop = document.createElement('div');
+    pop.classList.add('tap-pop');
+    pop.textContent = `+${clickPower}`;
+    const rect = clickArea.getBoundingClientRect();
+    pop.style.left = `${x - rect.left - 15}px`;
+    pop.style.top = `${y - rect.top - 30}px`;
+    clickArea.appendChild(pop);
+    setTimeout(() => { pop.remove(); }, 600);
+}
+
+// --- СИСТЕМА УЛУЧШЕНИЙ ---
+function getUpgradeCost(upgrade) {
+    return Math.floor(upgrade.baseCost * Math.pow(1.15, upgrade.level));
+}
+
+function buyUpgrade(index) {
+    const upgrade = upgrades[index];
+    const cost = getUpgradeCost(upgrade);
+
+    if (score >= cost) {
+        score -= cost;
+        upgrade.level++;
+        profitPerHour += upgrade.bonus;
+        clickPower += 1; 
+        saveGame();
+        updateUI();
+        if (window.Telegram?.WebApp?.HapticFeedback) window.Telegram.WebApp.HapticFeedback.notificationOccurred('success');
+    }
+}
+
+function renderUpgrades() {
+    if (!upgradesList) return;
+    upgradesList.innerHTML = '';
+    upgrades.forEach((upgrade, index) => {
+        const cost = getUpgradeCost(upgrade);
+        const canBuy = score >= cost;
+        const card = document.createElement('div');
+        card.className = `upgrade-card ${canBuy ? '' : 'disabled'}`;
+        card.onclick = () => { if (canBuy) buyUpgrade(index); };
+        card.innerHTML = `
+            <div class="upgrade-icon">${upgrade.icon}</div>
+            <div class="upgrade-info">
+                <div class="upgrade-name">${upgrade.name} <span style="font-size:10px; opacity:0.7">Ур. ${upgrade.level}</span></div>
+                <div class="upgrade-bonus">+${upgrade.bonus}/час</div>
+            </div>
+            <div class="upgrade-cost">${cost.toLocaleString('ru-RU')}</div>
+        `;
+        upgradesList.appendChild(card);
+    });
+}
+
+// --- ЕЖЕДНЕВНЫЙ БОНУС ---
+function checkDailyBonus() {
+    const lastClaim = localStorage.getItem('nl_last_claim');
+    const currentDay = new Date().toDateString();
+    
+    if (lastClaim !== currentDay) {
+        let streak = parseInt(localStorage.getItem('nl_streak') || '0');
+        if (lastClaim) {
+            const lastDate = new Date(lastClaim);
+            const today = new Date();
+            const diffTime = Math.abs(today - lastDate);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+            if (diffDays > 2) streak = 0; 
+        }
+        const dayIndex = streak % dailyRewards.length;
+        const reward = dailyRewards[dayIndex];
+        dayNumEl.textContent = streak + 1;
+        rewardAmountEl.textContent = `+${reward}`;
+        dailyModal.classList.add('active');
+
+        claimBtn.onclick = () => {
+            score += reward;
+            streak++;
+            localStorage.setItem('nl_last_claim', currentDay);
+            localStorage.setItem('nl_streak', streak);
+            dailyModal.classList.remove('active');
+            updateUI();
+            saveGame();
+            if (window.navigator.vibrate) window.navigator.vibrate([50, 50, 50]);
+        };
+    }
+}
+
+// --- ПАССИВНЫЙ ДОХОД И РЕГЕНЕРАЦИЯ ---
+setInterval(() => {
+    if (energy < maxEnergy) energy = Math.min(maxEnergy, energy + energyRegenSpeed);
+    if (profitPerHour > 0) score += profitPerHour / 3600;
+    updateUI();
+    saveGame();
+}, 1000);
+
+// --- НАВИГАЦИЯ ---
+const navItems = document.querySelectorAll('.nav-item');
+const screens = document.querySelectorAll('.screen');
+navItems.forEach(item => {
+    item.addEventListener('click', () => {
+        navItems.forEach(nav => nav.classList.remove('active'));
+        item.classList.add('active');
+        const targetScreenId = item.getAttribute('data-screen');
+        screens.forEach(screen => {
+            screen.classList.remove('active');
+            if (screen.id === targetScreenId) screen.classList.add('active');
+        });
+    });
+});
+
+// --- ЗАПУСК ---
+if (slonBtn) {
+    slonBtn.addEventListener('touchstart', handleTap, { passive: false });
+    slonBtn.addEventListener('mousedown', handleTap);
+}
+
+loadGame();
+checkDailyBonus();
+updateUI();
+</script>
 </body>
 </html>
