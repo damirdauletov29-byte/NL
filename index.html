@@ -27,11 +27,10 @@
             display: none;
             flex-direction: column;
             align-items: center;
-            justify-content: flex-start;
+            justify-content: space-between;
             flex: 1;
-            padding: 15px 15px 90px 15px; /* Отступ снизу под меню */
+            padding: 20px 20px 90px 20px; /* Отступ снизу под меню */
             height: calc(100vh - 75px);
-            overflow-y: auto; /* Включаем прокрутку для длинных экранов */
         }
         .screen.active {
             display: flex;
@@ -43,7 +42,7 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            height: 80%;
+            height: 100%;
             text-align: center;
             gap: 15px;
         }
@@ -59,7 +58,6 @@
             width: 100%;
             background: rgba(13, 27, 30, 0.4);
             backdrop-filter: blur(10px);
-            flex-shrink: 0;
         }
         .title {
             font-size: 13px;
@@ -80,7 +78,7 @@
             text-shadow: 0 0 15px rgba(255,255,255,0.3);
         }
 
-        /* --- ЭКРАН 1: ТАПАЛКА --- */
+        /* Главная кнопка-слон */
         .click-area {
             position: relative;
             width: 75vw;
@@ -108,6 +106,8 @@
         .slon-btn:active {
             transform: scale(0.95);
         }
+
+        /* Всплывающие цифры (+1) */
         .tap-pop {
             position: absolute;
             font-size: 32px;
@@ -121,10 +121,11 @@
             0% { opacity: 1; transform: translateY(0) scale(1); }
             100% { opacity: 0; transform: translateY(-120px) scale(1.2); }
         }
+
+        /* Статистика энергии */
         .footer-stats {
             width: 100%;
             max-width: 400px;
-            margin-top: auto;
         }
         .energy-text {
             display: flex;
@@ -149,90 +150,7 @@
             transition: width 0.1s ease;
         }
 
-        /* --- ЭКРАН 2: ПРОКАЧКА (УЛУЧШЕНИЯ) --- */
-        .upgrade-header {
-            background: rgba(255, 255, 255, 0.08);
-            border-radius: 15px;
-            padding: 12px;
-            width: 100%;
-            max-width: 400px;
-            text-align: center;
-            margin-bottom: 20px;
-            border: 1px solid rgba(0, 203, 214, 0.2);
-        }
-        .pincome-title {
-            font-size: 12px;
-            text-transform: uppercase;
-            color: #a2b7b5;
-        }
-        .pincome-value {
-            font-size: 20px;
-            font-weight: bold;
-            color: #00ffcc;
-        }
-        .cards-container {
-            width: 100%;
-            max-width: 400px;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-        /* Стили карточки улучшения */
-        .upgrade-card {
-            background: rgba(20, 40, 43, 0.7);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 16px;
-            padding: 14px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            transition: transform 0.2s, border-color 0.2s;
-        }
-        .upgrade-card:active {
-            transform: scale(0.98);
-        }
-        .card-info {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-        }
-        .card-name {
-            font-size: 16px;
-            font-weight: bold;
-            color: #ffffff;
-        }
-        .card-income {
-            font-size: 12px;
-            color: #00ffcc;
-        }
-        .card-level {
-            font-size: 11px;
-            color: #a2b7b5;
-            background: rgba(255, 255, 255, 0.1);
-            padding: 2px 6px;
-            border-radius: 8px;
-            width: fit-content;
-        }
-        .buy-btn {
-            background: #00cbd6;
-            color: #0d1b1e;
-            border: none;
-            border-radius: 12px;
-            padding: 10px 16px;
-            font-weight: bold;
-            font-size: 14px;
-            cursor: pointer;
-            box-shadow: 0 4px 12px rgba(0, 203, 214, 0.3);
-            transition: background 0.2s;
-        }
-        .buy-btn:disabled {
-            background: #4a5e60;
-            color: #829294;
-            box-shadow: none;
-            cursor: not-allowed;
-        }
-
-        /* --- НИЖНЕЕ МЕНЮ НАВИГАЦИИ --- */
+        /* НИЖНЕЕ МЕНЮ НАВИГАЦИИ */
         .navbar {
             position: fixed;
             bottom: 15px;
@@ -306,14 +224,11 @@
         </div>
     </div>
 
-    <!-- ЭКРАН 2: ПРОКАЧКА (ШТАБ ПАРТИИ) -->
+    <!-- ЭКРАН 2: ПРОКАЧКА (УЛУЧШЕНИЯ) -->
     <div class="screen" id="screen-upgrade">
-        <div class="upgrade-header">
-            <div class="pincome-title">Пассивный рост сторонников</div>
-            <div class="pincome-value">+<span id="passiveIncomeText">0</span> голосов/сек</div>
-        </div>
-        <div class="cards-container" id="cardsContainer">
-            <!-- Сюда карточки будут добавляться динамически через JS -->
+        <div class="placeholder-content">
+            <h2>📈 Штаб партии</h2>
+            <p>Здесь будут карточки улучшений для прокачки пассивного дохода «Голосов в час».</p>
         </div>
     </div>
 
@@ -326,3 +241,33 @@
     </div>
 
     <!-- ЭКРАН 4: ДРУЗЬЯ (РЕФЕРАЛЫ) -->
+    <div class="screen" id="screen-friends">
+        <div class="placeholder-content">
+            <h2>👥 Сторонники</h2>
+            <p>Приглашайте друзей по реферальной ссылке и получайте процент от их кликов!</p>
+        </div>
+    </div>
+
+    <!-- НИЖНЯЯ ПАНЕЛЬ НАВИГАЦИИ -->
+    <nav class="navbar">
+        <div class="nav-item active" data-screen="screen-tap">
+            <span class="nav-icon">🐘</span>
+            <span>Тап</span>
+        </div>
+        <div class="nav-item" data-screen="screen-upgrade">
+            <span class="nav-icon">📈</span>
+            <span>Прокачка</span>
+        </div>
+        <div class="nav-item" data-screen="screen-tasks">
+            <span class="nav-icon">💼</span>
+            <span>Задания</span>
+        </div>
+        <div class="nav-item" data-screen="screen-friends">
+            <span class="nav-icon">👥</span>
+            <span>Друзья</span>
+        </div>
+    </nav>
+
+    <script src="script.js"></script>
+</body>
+</html>
