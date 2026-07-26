@@ -2,347 +2,149 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Тапай за Новых!</title>
-    <script src="https://telegram.org"></script>
     <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+            margin: 0;
+            padding: 0;
+        }
         body {
-            background-color: #121212;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: linear-gradient(135deg, #0d1b1e 0%, #00a896 100%);
             color: #ffffff;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: space-between;
             height: 100vh;
-            margin: 0;
             padding: 20px;
-            box-sizing: border-box;
             overflow: hidden;
-            user-select: none;
         }
-
+        /* Шапка с балансом */
         .header {
             text-align: center;
+            margin-top: 20px;
             width: 100%;
-            margin-top: 10px;
         }
-
-        .status {
-            color: #00c2cb;
-            font-size: 14px;
-            font-weight: bold;
+        .title {
+            font-size: 16px;
             text-transform: uppercase;
-            letter-spacing: 1px;
+            letter-spacing: 2px;
+            color: #e0f7f4;
+            opacity: 0.8;
+            margin-bottom: 5px;
         }
-
-        .balance-container {
+        .score-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        .score {
             font-size: 42px;
             font-weight: 800;
-            margin: 5px 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
+            text-shadow: 0 0 15px rgba(255,255,255,0.3);
         }
-
-        .income-view {
-            font-size: 14px;
-            color: #a0a0a0;
-            margin-bottom: 10px;
-        }
-
-        .currency {
-            color: #00c2cb;
-        }
-
-        /* Экраны */
-        .screen {
-            width: 100%;
-            flex-grow: 1;
-            display: none;
-            align-items: center;
-            justify-content: center;
+        /* Главная кнопка-слон */
+        .click-area {
             position: relative;
-        }
-
-        .screen.active {
+            width: 80vw;
+            max-width: 320px;
+            aspect-ratio: 1;
             display: flex;
-        }
-
-        /* Главный экран кликера */
-        #main-screen {
-            flex-direction: column;
-        }
-
-        .coin-btn {
-            width: 240px;
-            height: 240px;
-            border-radius: 50%;
-            background: radial-gradient(circle, #00c2cb 0%, #008b94 100%);
-            border: 8px solid rgba(255, 255, 255, 0.15);
-            box-shadow: 0 0 40px rgba(0, 194, 203, 0.5);
-            cursor: pointer;
-            transition: transform 0.05s ease, box-shadow 0.1s ease;
-            outline: none;
-            display: flex;
+            align-items: center;
             justify-content: center;
-            align-items: center;
-            padding: 0;
         }
-
-        .coin-btn:active {
-            transform: scale(0.94);
-            box-shadow: 0 0 20px rgba(0, 194, 203, 0.3);
-        }
-
-        .logo-svg {
-            width: 130px;
-            height: 130px;
-            fill: #ffffff;
-            filter: drop-shadow(0px 4px 10px rgba(0,0,0,0.3));
-        }
-
-        /* Экраны контента (Прокачка, Задания, Топ) */
-        #upgrade-screen, #tasks-screen, #leaderboard-screen {
-            flex-direction: column;
-            justify-content: flex-start;
-            overflow-y: auto;
-            padding: 10px 0;
-            gap: 12px;
-            width: 100%;
-        }
-
-        .card, .task-card, .leader-row {
-            width: 90%;
-            max-width: 350px;
-            background-color: #1e1e1e;
-            border-radius: 12px;
-            padding: 14px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border: 1px solid #2d2d2d;
-            box-sizing: border-box;
-        }
-
-        .card-info, .task-info, .leader-info {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-            text-align: left;
-        }
-
-        .card-name, .task-name, .leader-name {
-            font-weight: bold;
-            font-size: 15px;
-        }
-
-        .card-profit, .task-reward, .leader-score {
-            font-size: 12px;
-            color: #00c2cb;
-        }
-
-        .card-cost, .task-btn, .invite-btn {
-            font-size: 13px;
-            color: #e0e0e0;
-            background-color: #2a2a2a;
-            padding: 8px 14px;
-            border-radius: 20px;
-            border: none;
-            cursor: pointer;
-            font-weight: bold;
-            transition: all 0.2s;
-            white-space: nowrap;
-        }
-
-        .card-cost:hover, .task-btn:hover, .invite-btn:hover {
-            background-color: #00c2cb;
-            color: #fff;
-        }
-
-        .task-btn.done {
-            background-color: #2a6f43;
-            color: #fff;
-            cursor: default;
-        }
-
-        /* Таблица лидеров */
-        .leader-row.player-row {
-            border: 1px solid #00c2cb;
-            background: linear-gradient(135deg, #1e1e1e 0%, #132427 100%);
-        }
-
-        .leader-rank {
-            font-weight: 800;
-            font-size: 16px;
-            color: #888;
-            width: 30px;
-            text-align: center;
-        }
-
-        .rank-1 { color: #ffd700; font-size: 20px; } /* Золото */
-        .rank-2 { color: #c0c0c0; font-size: 18px; } /* Серебро */
-        .rank-3 { color: #cd7f32; font-size: 17px; } /* Бронза */
-
-        .leader-meta {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        /* Блок рефералов */
-        .referral-section {
-            width: 90%;
-            max-width: 350px;
-            background: linear-gradient(135deg, #1e1e1e 0%, #132427 100%);
-            border-radius: 12px;
-            padding: 14px;
-            box-sizing: border-box;
-            border: 1px solid #00c2cb;
-            margin-bottom: 10px;
-            text-align: center;
-        }
-
-        .ref-title {
-            font-weight: bold;
-            font-size: 16px;
-            margin-bottom: 5px;
-            color: #00c2cb;
-        }
-
-        .ref-desc {
-            font-size: 12px;
-            color: #aaa;
-            margin-bottom: 12px;
-        }
-
-        /* Подвал */
-        .footer {
-            width: 100%;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 15px;
-            margin-bottom: 10px;
-        }
-
-        .energy-container {
-            width: 90%;
-            max-width: 350px;
-        }
-
-        .energy-text {
-            font-size: 14px;
-            margin-bottom: 5px;
-            display: flex;
-            justify-content: space-between;
-        }
-
-        .progress-bar {
-            width: 100%;
-            height: 12px;
-            background-color: #222;
-            border-radius: 6px;
-            overflow: hidden;
-        }
-
-        .progress-fill {
+        .slon-btn {
             width: 100%;
             height: 100%;
-            background-color: #00c2cb;
-            border-radius: 6px;
-            transition: width 0.1s ease;
-        }
-
-        .menu {
-            display: flex;
-            justify-content: space-around;
-            width: 100%;
-            max-width: 400px;
-            background-color: #1e1e1e;
-            padding: 10px;
-            border-radius: 15px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-        }
-
-        .menu-item {
-            background: none;
-            border: none;
-            color: #888;
-            font-size: 12px;
+            border-radius: 50%;
+            background-image: url('slon.jpg'); /* Сюда сохраните вашу картинку */
+            background-size: cover;
+            background-position: center;
+            border: 6px solid #00cbd6;
+            box-shadow: 0 0 30px rgba(0, 203, 214, 0.4);
             cursor: pointer;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 4px;
+            transition: transform 0.05s ease;
+            outline: none;
+            -webkit-tap-highlight-color: transparent;
         }
-
-        .menu-item.active {
-            color: #00c2cb;
+        .slon-btn:active {
+            transform: scale(0.95);
         }
-
-        .floating-num {
+        /* Всплывающие цифры (+1) */
+        .tap-pop {
             position: absolute;
-            color: #00c2cb;
-            font-size: 28px;
-            font-weight: bold;
+            font-size: 32px;
+            font-weight: 900;
+            color: #00cbd6;
+            text-shadow: 0 0 10px rgba(0,0,0,0.5);
             pointer-events: none;
             animation: floatUp 0.6s ease-out forwards;
         }
-
         @keyframes floatUp {
             0% { opacity: 1; transform: translateY(0) scale(1); }
-            100% { opacity: 0; transform: translateY(-100px) scale(1.2); }
+            100% { opacity: 0; transform: translateY(-120px) scale(1.2); }
+        }
+        /* Прогресс-бар энергии */
+        .footer-stats {
+            width: 100%;
+            max-width: 400px;
+            margin-bottom: 20px;
+            padding: 0 10px;
+        }
+        .energy-text {
+            display: flex;
+            justify-content: space-between;
+            font-size: 14px;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 14px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .progress-fill {
+            height: 100%;
+            width: 100%;
+            background: linear-gradient(90deg, #00cbd6, #00ffcc);
+            border-radius: 10px;
+            transition: width 0.1s ease;
+            box-shadow: 0 0 10px rgba(0, 255, 204, 0.5);
         }
     </style>
 </head>
 <body>
 
     <div class="header">
-        <div class="status" id="player-status">Уровень 1: Сторонник партии</div>
-        <div class="balance-container">
-            <span id="balance-view">0</span>
-            <span class="currency">ПО</span>
+        <div class="title">Собрано голосов</div>
+        <div class="score-container">
+            <span class="score" id="score">0</span>
         </div>
-        <div class="income-view">В час: +<span id="income-view">0</span> ПО</div>
     </div>
 
-    <!-- ГЛАВНЫЙ ЭКРАН (КЛИКЕР) -->
-    <div class="screen active" id="main-screen">
-        <button class="coin-btn" id="coin-trigger">
-            <svg class="logo-svg" viewBox="0 0 100 100">
-                <path d="M25 15 H40 V42 H60 V15 H75 V85 H60 V56 H40 V85 H25 Z" />
-                <path d="M75 15 L85 25 L45 85 L35 75 Z" opacity="0.15" fill="#000"/>
-            </svg>
-        </button>
+    <div class="click-area" id="clickArea">
+        <button class="slon-btn" id="slonBtn"></button>
     </div>
 
-    <!-- ЭКРАН ПРОКАЧКИ -->
-    <div class="screen" id="upgrade-screen"></div>
-
-    <!-- ЭКРАН ЗАДАНИЙ -->
-    <div class="screen" id="tasks-screen">
-        <div class="referral-section">
-            <div class="ref-title">👥 Приведи друга</div>
-            <div class="ref-desc">Получай +15 000 ПО за каждого приглашенного сторонника!</div>
-            <button class="invite-btn" id="invite-trigger">🔗 Пригласить друга</button>
-            <div style="font-size: 11px; color: #00c2cb; margin-top: 8px;" id="friends-count">Приглашено друзей: 0</div>
+    <div class="footer-stats">
+        <div class="energy-text">
+            <span>⚡ Энергия</span>
+            <span id="energyText">1000 / 1000</span>
         </div>
-        <div id="tasks-list" style="width: 100%; display: flex; flex-direction: column; align-items: center; gap: 12px;"></div>
+        <div class="progress-bar">
+            <div class="progress-fill" id="energyFill"></div>
+        </div>
     </div>
 
-    <!-- ЭКРАН РЕЙТИНГА (ТОП) -->
-    <div class="screen" id="leaderboard-screen">
-        <div style="font-size: 18px; font-weight: bold; margin-bottom: 5px; color: #00c2cb;">Будущие лидеры России</div>
-        <div style="font-size: 12px; color: #aaa; margin-bottom: 15px;">Топ игроков по версии молодежного крыла</div>
-        <div id="leaderboard-list" style="width: 100%; display: flex; flex-direction: column; align-items: center; gap: 8px;"></div>
-    </div>
-
-    <div class="footer">
-        <div class="energy-container">
-            <div class="energy-text">
-                <span>⚡ Энергия</span>
-                <span id="energy-view">1000/1000</span>
-            </div>
-            <div class="progress-bar">
+    <script src="script.js"></script>
+</body>
+</html>
