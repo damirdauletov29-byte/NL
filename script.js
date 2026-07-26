@@ -26,15 +26,12 @@ const upgrades = [
     { id: 'tv', name: 'Эфир на ТВ', baseCost: 15000, bonus: 8000, icon: '📺', level: 0 },
 ];
 
-// Задания
+// Задания с ПРАВИЛЬНЫМИ ссылками
 const tasks = [
     { id: 'site', name: 'Официальный сайт', reward: 5000, icon: '🌐', link: 'https://novye.lyudi.ru/', type: 'link' },
     { id: 'tg_channel', name: 'Telegram канал', reward: 10000, icon: '✈️', link: 'https://t.me/novieludy', type: 'sub' },
     { id: 'vk_group', name: 'Группа ВКонтакте', reward: 7500, icon: '🔵', link: 'https://vk.com/novieludy', type: 'sub' },
 ];
-
-// Награды по дням
-const dailyRewards = [500, 1000, 2500, 5000, 10000, 25000, 50000];
 
 // Элементы DOM
 const scoreEl = document.getElementById('score');
@@ -42,12 +39,11 @@ const energyTextEl = document.getElementById('energyText');
 const energyFillEl = document.getElementById('energyFill');
 const clickArea = document.getElementById('clickArea');
 const slonBtn = document.getElementById('slonBtn');
+const rankNameEl = document.getElementById('rankName');
+const rankIconEl = document.getElementById('rankIcon');
+const levelFillEl = document.getElementById('levelFill');
 const upgradesList = document.getElementById('upgradesList');
 const tasksList = document.getElementById('tasksList');
-const dailyModal = document.getElementById('dailyModal');
-const dayNumEl = document.getElementById('dayNum');
-const rewardAmountEl = document.getElementById('rewardAmount');
-const claimBtn = document.getElementById('claimBtn');
 
 // --- СИСТЕМА СОХРАНЕНИЯ ---
 function loadGame() {
@@ -89,10 +85,29 @@ function saveGame() {
 function updateUI() {
     scoreEl.textContent = Math.floor(score).toLocaleString('ru-RU');
     
+    // Энергия
     if (energyTextEl && energyFillEl) {
         energyTextEl.textContent = `${Math.floor(energy)} / ${maxEnergy}`;
         const percentage = (energy / maxEnergy) * 100;
         energyFillEl.style.width = `${percentage}%`;
+    }
+
+    // Ранг
+    let currentRankIndex = 0;
+    for (let i = 0; i < ranks.length; i++) {
+        if (score >= ranks[i].minScore) currentRankIndex = i;
+        else break;
+    }
+    const currentRank = ranks[currentRankIndex];
+    const nextRank = ranks[currentRankIndex + 1];
+    rankNameEl.textContent = currentRank.name;
+    rankIconEl.textContent = currentRank.icon;
+
+    if (nextRank) {
+        const progress = ((score - currentRank.minScore) / (nextRank.minScore - currentRank.minScore)) * 100;
+        levelFillEl.style.width = `${Math.min(100, Math.max(0, progress))}%`;
+    } else {
+        levelFillEl.style.width = '100%';
     }
 
     renderUpgrades();
@@ -146,7 +161,6 @@ function buyUpgrade(index) {
         clickPower += 1; 
         saveGame();
         updateUI();
-        if (window.Telegram?.WebApp?.HapticFeedback) window.Telegram.WebApp.HapticFeedback.notificationOccurred('success');
     }
 }
 
@@ -215,37 +229,6 @@ function renderTasks() {
     });
 }
 
-// --- ЕЖЕДНЕВНЫЙ БОНУС ---
-function checkDailyBonus() {
-    const lastClaim = localStorage.getItem('nl_last_claim');
-    const currentDay = new Date().toDateString();
-    if (lastClaim !== currentDay) {
-        let streak = parseInt(localStorage.getItem('nl_streak') || '0');
-        if (lastClaim) {
-            const lastDate = new Date(lastClaim);
-            const today = new Date();
-            const diffTime = Math.abs(today - lastDate);
-            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
-            if (diffDays > 2) streak = 0; 
-        }
-        const dayIndex = streak % dailyRewards.length;
-        const reward = dailyRewards[dayIndex];
-        dayNumEl.textContent = streak + 1;
-        rewardAmountEl.textContent = `+${reward}`;
-        dailyModal.classList.add('active');
-        claimBtn.onclick = () => {
-            score += reward;
-            streak++;
-            localStorage.setItem('nl_last_claim', currentDay);
-            localStorage.setItem('nl_streak', streak);
-            dailyModal.classList.remove('active');
-            updateUI();
-            saveGame();
-            if (window.navigator.vibrate) window.navigator.vibrate([50, 50, 50]);
-        };
-    }
-}
-
 // --- ПАССИВНЫЙ ДОХОД И РЕГЕНЕРАЦИЯ ---
 setInterval(() => {
     if (energy < maxEnergy) energy = Math.min(maxEnergy, energy + energyRegenSpeed);
@@ -276,5 +259,4 @@ if (slonBtn) {
 }
 
 loadGame();
-checkDailyBonus();
 updateUI();
