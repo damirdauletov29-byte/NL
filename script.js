@@ -26,7 +26,7 @@ const upgrades = [
     { id: 'tv', name: 'Эфир на ТВ', baseCost: 15000, bonus: 8000, icon: '📺', level: 0 },
 ];
 
-// Задания с ПРАВИЛЬНЫМИ ссылками
+// Задания с правильными ссылками
 const tasks = [
     { id: 'site', name: 'Официальный сайт', reward: 5000, icon: '🌐', link: 'https://newpeople.ru/', type: 'link' },
     { id: 'tg_channel', name: 'Telegram канал', reward: 10000, icon: '✈️', link: 'https://tele.click/partynewpeople', type: 'sub' },
@@ -66,6 +66,7 @@ function loadGame() {
         });
     }
 
+    // Помечаем выполненные задания при загрузке
     tasks.forEach(task => {
         if (completedTasks.includes(task.id)) task.completed = true;
     });
@@ -185,19 +186,26 @@ function renderUpgrades() {
     });
 }
 
-// --- ЛОГИКА ЗАДАНИЙ ---
+// --- ЛОГИКА ЗАДАНИЙ (ИСПРАВЛЕНО) ---
 function startTask(task) {
+    // Если задание уже выполнено или идет проверка, ничего не делаем
     if (task.completed) return;
-    window.open(task.link, '_blank');
+    
     const btn = document.getElementById(`btn-${task.id}`);
-    if (btn) {
+    if (btn && !btn.classList.contains('checking')) {
+        // Открываем ссылку
+        window.open(task.link, '_blank');
+        
+        // Блокируем кнопку
         btn.textContent = 'Проверка...';
         btn.classList.add('checking');
+        
+        // Имитация проверки (3 секунды)
         setTimeout(() => {
             task.completed = true;
             score += task.reward;
             saveGame();
-            updateUI();
+            updateUI(); // Перерисовываем интерфейс, чтобы кнопка стала "Готово"
             if (window.navigator.vibrate) window.navigator.vibrate([50, 50, 50]);
         }, 3000);
     }
@@ -209,12 +217,15 @@ function renderTasks() {
     tasks.forEach(task => {
         const card = document.createElement('div');
         card.className = 'task-card';
+        
         let btnText = 'Выполнить';
         let btnClass = '';
+        
         if (task.completed) {
             btnText = 'Готово';
             btnClass = 'completed';
         }
+
         card.innerHTML = `
             <div class="task-info">
                 <span class="task-icon">${task.icon}</span>
