@@ -1,37 +1,51 @@
-// Инициализация игровых переменных
+// --- ИГРОВАЯ ЛОГИКА (ТАПАЛКА, ЭНЕРГИЯ И СОХРАНЕНИЕ) ---
 let score = 0;
 let energy = 1000;
 const maxEnergy = 1000;
-const clickPower = 1; // Сколько давать за один тап
-const energyRegenSpeed = 3; // Сколько энергии восстанавливать в секунду
+const clickPower = 1; 
+const energyRegenSpeed = 3; 
 
-// Получение элементов DOM
 const scoreEl = document.getElementById('score');
 const energyTextEl = document.getElementById('energyText');
 const energyFillEl = document.getElementById('energyFill');
 const clickArea = document.getElementById('clickArea');
 const slonBtn = document.getElementById('slonBtn');
 
-// Функция обновления интерфейса
-function updateUI() {
-    scoreEl.textContent = score.toLocaleString('ru-RU');
-    energyTextEl.textContent = `${energy} / ${maxEnergy}`;
-    
-    const percentage = (energy / maxEnergy) * 100;
-    energyFillEl.style.width = `${percentage}%`;
+// Загрузка сохраненного прогресса из памяти браузера (LocalStorage)
+function loadGame() {
+    const savedScore = localStorage.getItem('nl_tap_score');
+    const savedEnergy = localStorage.getItem('nl_tap_energy');
+
+    if (savedScore !== null) score = parseInt(savedScore, 10);
+    if (savedEnergy !== null) energy = parseInt(savedEnergy, 10);
 }
 
-// Обработчик события клика/тапа
-function handleTap(e) {
-    e.preventDefault(); // Предотвращаем зум на смартфонах
+// Запись текущего прогресса в LocalStorage
+function saveGame() {
+    localStorage.setItem('nl_tap_score', score);
+    localStorage.setItem('nl_tap_energy', energy);
+}
 
-    // Проверяем, хватает ли энергии для клика
+// Обновление элементов интерфейса на основе актуальных данных
+function updateUI() {
+    scoreEl.textContent = score.toLocaleString('ru-RU');
+    if (energyTextEl && energyFillEl) {
+        energyTextEl.textContent = `${energy} / ${maxEnergy}`;
+        const percentage = (energy / maxEnergy) * 100;
+        energyFillEl.style.width = `${percentage}%`;
+    }
+}
+
+// Функция обработки нажатия на кнопку-слона
+function handleTap(e) {
+    e.preventDefault(); // Защита от системного двойного тапа и масштабирования
     if (energy >= clickPower) {
         score += clickPower;
         energy -= clickPower;
+        
         updateUI();
+        saveGame(); // Сохраняем состояние сразу после изменения баланса
 
-        // Получаем координаты клика (поддержка мыши и тач-скрина)
         let clientX, clientY;
         if (e.touches && e.touches.length > 0) {
             clientX = e.touches[e.touches.length - 1].clientX;
@@ -40,41 +54,62 @@ function handleTap(e) {
             clientX = e.clientX;
             clientY = e.clientY;
         }
-
         createPopUp(clientX, clientY);
     }
 }
 
-// Создание всплывающего текста "+1"
+// Создание анимированной вылетающей цифры (+1)
 function createPopUp(x, y) {
     const pop = document.createElement('div');
     pop.classList.add('tap-pop');
     pop.textContent = `+${clickPower}`;
 
-    // Позиционируем элемент относительно области клика
     const rect = clickArea.getBoundingClientRect();
     pop.style.left = `${x - rect.left - 15}px`;
     pop.style.top = `${y - rect.top - 30}px`;
 
     clickArea.appendChild(pop);
-
-    // Удаляем элемент после завершения анимации
-    setTimeout(() => {
-        pop.remove();
-    }, 600);
+    setTimeout(() => { pop.remove(); }, 600);
 }
 
-// Слушатели событий (для смартфонов используем touchstart, для ПК — mousedown)
-slonBtn.addEventListener('touchstart', handleTap, { passive: false });
-slonBtn.addEventListener('mousedown', handleTap);
+// Привязка событий клика и тача к главной кнопке
+if (slonBtn) {
+    slonBtn.addEventListener('touchstart', handleTap, { passive: false });
+    slonBtn.addEventListener('mousedown', handleTap);
+}
 
-// Регенерация энергии каждую секунду
+// Таймер регенерации энергии (срабатывает раз в секунду)
 setInterval(() => {
     if (energy < maxEnergy) {
         energy = Math.min(maxEnergy, energy + energyRegenSpeed);
         updateUI();
+        saveGame(); // Периодически фиксируем восстановленную энергию
     }
 }, 1000);
 
-// Первоначальный запуск
+
+// --- ЛОГИКА НАВИГАЦИИ (ПЕРЕКЛЮЧЕНИЕ ЭКРАНОВ) ---
+const navItems = document.querySelectorAll('.nav-item');
+const screens = document.querySelectorAll('.screen');
+
+navItems.forEach(item => {
+    item.addEventListener('click', () => {
+        // Снимаем активный статус со всех пунктов меню
+        navItems.forEach(nav => nav.classList.remove('active'));
+        item.classList.add('active');
+
+        const targetScreenId = item.getAttribute('data-screen');
+
+        // Скрываем все разделы и отображаем выбранный пользователем
+        screens.forEach(screen => {
+            screen.classList.remove('active');
+            if (screen.id === targetScreenId) {
+                screen.classList.add('active');
+            }
+        });
+    });
+});
+
+// Запуск инициализации при открытии игры
+loadGame();
 updateUI();
