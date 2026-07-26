@@ -40,18 +40,15 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helve
 .placeholder-content { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center; gap: 15px; }
 .placeholder-content h2 { font-size: 24px; color: #00cbd6; }
 
-/* БИРЖА ЛИДЕРОВ (НОВЫЕ СТИЛИ) */
-.rewards-list { width: 100%; max-width: 400px; display: flex; flex-direction: column; gap: 15px; padding-bottom: 20px; }
-.reward-card { background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(0, 203, 214, 0.2); border-radius: 18px; padding: 15px; display: flex; flex-direction: column; gap: 10px; position: relative; overflow: hidden; }
-.reward-card::before { content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: #00cbd6; }
-.reward-header { display: flex; align-items: center; gap: 12px; }
-.reward-icon { font-size: 28px; }
-.reward-title { font-weight: 800; font-size: 16px; }
-.reward-desc { font-size: 13px; opacity: 0.8; line-height: 1.4; }
-.reward-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 5px; }
-.reward-cost { font-size: 14px; font-weight: bold; color: #00ffcc; }
-.claim-reward-btn { background: #00cbd6; color: #0d1b1e; border: none; padding: 8px 16px; border-radius: 8px; font-weight: bold; font-size: 12px; cursor: pointer; }
-.claim-reward-btn:disabled { background: #555; color: #aaa; cursor: not-allowed; }
+/* ЛИГА РЕГИОНОВ (НОВЫЕ СТИЛИ) */
+.leaderboard-list { width: 100%; max-width: 400px; display: flex; flex-direction: column; gap: 10px; padding-bottom: 20px; }
+.region-card { background: rgba(255, 255, 255, 0.05); border-radius: 12px; padding: 12px 15px; display: flex; align-items: center; justify-content: space-between; border: 1px solid transparent; }
+.region-card.my-region { background: rgba(0, 203, 214, 0.15); border-color: #00cbd6; }
+.region-rank { font-weight: 800; font-size: 18px; width: 30px; color: #00cbd6; }
+.region-info { flex: 1; padding-left: 10px; }
+.region-name { font-weight: bold; font-size: 14px; }
+.region-score { font-size: 12px; opacity: 0.7; }
+.region-badge { font-size: 12px; background: #00cbd6; color: #0d1b1e; padding: 2px 6px; border-radius: 4px; font-weight: bold; }
 </style>
 </head>
 <body>
@@ -95,18 +92,18 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helve
     </div>
 </div>
 
-<!-- ЭКРАН 4: БИРЖА ЛИДЕРОВ (РЕАЛЬНЫЕ НАГРАДЫ) -->
+<!-- ЭКРАН 4: ЛИГА РЕГИОНОВ -->
 <div class="screen" id="screen-friends">
-    <h2 style="margin-bottom: 15px; color: #00cbd6; width: 100%;">🏆 Биржа Лидеров</h2>
-    <p style="font-size: 13px; opacity: 0.7; margin-bottom: 15px; width: 100%;">Обменивай голоса на реальные возможности от партии</p>
-    <div class="rewards-list" id="rewardsList"></div>
+    <h2 style="margin-bottom: 15px; color: #00cbd6; width: 100%;">🏆 Лига Регионов</h2>
+    <p style="font-size: 13px; opacity: 0.7; margin-bottom: 15px; width: 100%;">Борись за грант для своего региона!</p>
+    <div class="leaderboard-list" id="leaderboardList"></div>
 </div>
 
 <nav class="navbar">
     <div class="nav-item active" data-screen="screen-tap"><span class="nav-icon">🐘</span><span>Тап</span></div>
     <div class="nav-item" data-screen="screen-upgrade"><span class="nav-icon">📈</span><span>Прокачка</span></div>
     <div class="nav-item" data-screen="screen-tasks"><span class="nav-icon">💼</span><span>Задания</span></div>
-    <div class="nav-item" data-screen="screen-friends"><span class="nav-icon">👥</span><span>Биржа</span></div>
+    <div class="nav-item" data-screen="screen-friends"><span class="nav-icon">👥</span><span>Лига</span></div>
 </nav>
 
 <script src="script.js"></script>
