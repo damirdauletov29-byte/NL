@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Тапай за Новых!</title>
-    <!-- Подключаем Telegram WebApp SDK для интеграции с мессенджером -->
     <script src="https://telegram.org"></script>
     <style>
         body {
@@ -76,31 +75,34 @@
             flex-direction: column;
         }
 
+        /* Стильная бирюзовая кнопка-логотип */
         .coin-btn {
-            width: 230px;
-            height: 230px;
+            width: 240px;
+            height: 240px;
             border-radius: 50%;
-            background: radial-gradient(circle, #00b4d8 0%, #0077b6 100%);
-            border: 8px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 0 0 30px rgba(0, 180, 216, 0.4);
+            background: radial-gradient(circle, #00c2cb 0%, #008b94 100%);
+            border: 8px solid rgba(255, 255, 255, 0.15);
+            box-shadow: 0 0 40px rgba(0, 194, 203, 0.5);
             cursor: pointer;
-            transition: transform 0.05s ease;
+            transition: transform 0.05s ease, box-shadow 0.1s ease;
             outline: none;
             display: flex;
             justify-content: center;
             align-items: center;
+            padding: 0;
         }
 
         .coin-btn:active {
-            transform: scale(0.95);
+            transform: scale(0.94);
+            box-shadow: 0 0 20px rgba(0, 194, 203, 0.3);
         }
 
-        .coin-inner {
-            color: white;
-            font-size: 22px;
-            font-weight: bold;
-            text-align: center;
-            line-height: 1.2;
+        /* Графический логотип внутри кнопки (Буква Н в стиле Новых Людей) */
+        .logo-svg {
+            width: 130px;
+            height: 130px;
+            fill: #ffffff;
+            filter: drop-shadow(0px 4px 10px rgba(0,0,0,0.3));
         }
 
         /* Экран прокачки и Заданий */
@@ -140,7 +142,7 @@
 
         .card-profit, .task-reward {
             font-size: 12px;
-            color: #00b4d8;
+            color: #00c2cb;
         }
 
         .card-cost, .task-btn, .invite-btn {
@@ -157,7 +159,7 @@
         }
 
         .card-cost:hover, .task-btn:hover, .invite-btn:hover {
-            background-color: #00b4d8;
+            background-color: #00c2cb;
             color: #fff;
         }
 
@@ -171,11 +173,11 @@
         .referral-section {
             width: 90%;
             max-width: 350px;
-            background: linear-gradient(135deg, #1e1e1e 0%, #15252d 100%);
+            background: linear-gradient(135deg, #1e1e1e 0%, #132427 100%);
             border-radius: 12px;
             padding: 14px;
             box-sizing: border-box;
-            border: 1px solid #00b4d8;
+            border: 1px solid #00c2cb;
             margin-bottom: 10px;
             text-align: center;
         }
@@ -184,7 +186,7 @@
             font-weight: bold;
             font-size: 16px;
             margin-bottom: 5px;
-            color: #00b4d8;
+            color: #00c2cb;
         }
 
         .ref-desc {
@@ -226,7 +228,7 @@
         .progress-fill {
             width: 100%;
             height: 100%;
-            background-color: #00b4d8;
+            background-color: #00c2cb;
             border-radius: 6px;
             transition: width 0.1s ease;
         }
@@ -255,12 +257,12 @@
         }
 
         .menu-item.active {
-            color: #00b4d8;
+            color: #00c2cb;
         }
 
         .floating-num {
             position: absolute;
-            color: #00b4d8;
+            color: #00c2cb;
             font-size: 28px;
             font-weight: bold;
             pointer-events: none;
@@ -284,26 +286,28 @@
         <div class="income-view">В час: +<span id="income-view">0</span> ПО</div>
     </div>
 
-    <!-- ГЛАВНЫЙ ЭКРАН (КЛИКЕР) -->
+    <!-- ГЛАВНЫЙ ЭКРАН (КЛИКЕР С ЛОГОТИПОМ) -->
     <div class="screen active" id="main-screen">
         <button class="coin-btn" id="coin-trigger">
-            <div class="coin-inner">НОВЫЕ<br>ЛЮДИ</div>
+            <!-- Векторный минималистичный логотип Новых Людей (Стилизованная динамичная Н) -->
+            <svg class="logo-svg" viewBox="0 0 100 100">
+                <path d="M25 15 H40 V42 H60 V15 H75 V85 H60 V56 H40 V85 H25 Z" />
+                <path d="M75 15 L85 25 L45 85 L35 75 Z" opacity="0.15" fill="#000"/>
+            </svg>
         </button>
     </div>
 
     <!-- ЭКРАН ПРОКАЧКИ -->
     <div class="screen" id="upgrade-screen"></div>
 
-    <!-- ЭКРАН ЗАДАНИЙ И РЕФЕРАЛОВ -->
+    <!-- ЭКРАН ЗАДАНИЙ -->
     <div class="screen" id="tasks-screen">
-        <!-- Блок приглашения друзей -->
         <div class="referral-section">
             <div class="ref-title">👥 Приведи друга</div>
             <div class="ref-desc">Получай +15 000 ПО за каждого приглашенного сторонника!</div>
             <button class="invite-btn" id="invite-trigger">🔗 Пригласить друга</button>
-            <div style="font-size: 11px; color: #00b4d8; margin-top: 8px;" id="friends-count">Приглашено друзей: 0</div>
+            <div style="font-size: 11px; color: #00c2cb; margin-top: 8px;" id="friends-count">Приглашено друзей: 0</div>
         </div>
-        <!-- Список квестов -->
         <div id="tasks-list" style="width: 100%; display: flex; flex-direction: column; align-items: center; gap: 12px;"></div>
     </div>
 
