@@ -29,7 +29,7 @@
         }
 
         .status {
-            color: #00b4d8;
+            color: #00c2cb;
             font-size: 14px;
             font-weight: bold;
             text-transform: uppercase;
@@ -53,7 +53,7 @@
         }
 
         .currency {
-            color: #00b4d8;
+            color: #00c2cb;
         }
 
         /* Экраны */
@@ -75,7 +75,6 @@
             flex-direction: column;
         }
 
-        /* Стильная бирюзовая кнопка-логотип */
         .coin-btn {
             width: 240px;
             height: 240px;
@@ -97,7 +96,6 @@
             box-shadow: 0 0 20px rgba(0, 194, 203, 0.3);
         }
 
-        /* Графический логотип внутри кнопки (Буква Н в стиле Новых Людей) */
         .logo-svg {
             width: 130px;
             height: 130px;
@@ -105,8 +103,8 @@
             filter: drop-shadow(0px 4px 10px rgba(0,0,0,0.3));
         }
 
-        /* Экран прокачки и Заданий */
-        #upgrade-screen, #tasks-screen {
+        /* Экраны контента (Прокачка, Задания, Топ) */
+        #upgrade-screen, #tasks-screen, #leaderboard-screen {
             flex-direction: column;
             justify-content: flex-start;
             overflow-y: auto;
@@ -115,7 +113,7 @@
             width: 100%;
         }
 
-        .card, .task-card {
+        .card, .task-card, .leader-row {
             width: 90%;
             max-width: 350px;
             background-color: #1e1e1e;
@@ -128,19 +126,19 @@
             box-sizing: border-box;
         }
 
-        .card-info, .task-info {
+        .card-info, .task-info, .leader-info {
             display: flex;
             flex-direction: column;
             gap: 4px;
             text-align: left;
         }
 
-        .card-name, .task-name {
+        .card-name, .task-name, .leader-name {
             font-weight: bold;
             font-size: 15px;
         }
 
-        .card-profit, .task-reward {
+        .card-profit, .task-reward, .leader-score {
             font-size: 12px;
             color: #00c2cb;
         }
@@ -167,6 +165,30 @@
             background-color: #2a6f43;
             color: #fff;
             cursor: default;
+        }
+
+        /* Таблица лидеров */
+        .leader-row.player-row {
+            border: 1px solid #00c2cb;
+            background: linear-gradient(135deg, #1e1e1e 0%, #132427 100%);
+        }
+
+        .leader-rank {
+            font-weight: 800;
+            font-size: 16px;
+            color: #888;
+            width: 30px;
+            text-align: center;
+        }
+
+        .rank-1 { color: #ffd700; font-size: 20px; } /* Золото */
+        .rank-2 { color: #c0c0c0; font-size: 18px; } /* Серебро */
+        .rank-3 { color: #cd7f32; font-size: 17px; } /* Бронза */
+
+        .leader-meta {
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
 
         /* Блок рефералов */
@@ -286,10 +308,9 @@
         <div class="income-view">В час: +<span id="income-view">0</span> ПО</div>
     </div>
 
-    <!-- ГЛАВНЫЙ ЭКРАН (КЛИКЕР С ЛОГОТИПОМ) -->
+    <!-- ГЛАВНЫЙ ЭКРАН (КЛИКЕР) -->
     <div class="screen active" id="main-screen">
         <button class="coin-btn" id="coin-trigger">
-            <!-- Векторный минималистичный логотип Новых Людей (Стилизованная динамичная Н) -->
             <svg class="logo-svg" viewBox="0 0 100 100">
                 <path d="M25 15 H40 V42 H60 V15 H75 V85 H60 V56 H40 V85 H25 Z" />
                 <path d="M75 15 L85 25 L45 85 L35 75 Z" opacity="0.15" fill="#000"/>
@@ -311,6 +332,13 @@
         <div id="tasks-list" style="width: 100%; display: flex; flex-direction: column; align-items: center; gap: 12px;"></div>
     </div>
 
+    <!-- ЭКРАН РЕЙТИНГА (ТОП) -->
+    <div class="screen" id="leaderboard-screen">
+        <div style="font-size: 18px; font-weight: bold; margin-bottom: 5px; color: #00c2cb;">Будущие лидеры России</div>
+        <div style="font-size: 12px; color: #aaa; margin-bottom: 15px;">Топ игроков по версии молодежного крыла</div>
+        <div id="leaderboard-list" style="width: 100%; display: flex; flex-direction: column; align-items: center; gap: 8px;"></div>
+    </div>
+
     <div class="footer">
         <div class="energy-container">
             <div class="energy-text">
@@ -318,18 +346,3 @@
                 <span id="energy-view">1000/1000</span>
             </div>
             <div class="progress-bar">
-                <div class="progress-fill" id="energy-fill"></div>
-            </div>
-        </div>
-
-        <div class="menu">
-            <button class="menu-item active" id="btn-main">🏠 Главная</button>
-            <button class="menu-item" id="btn-upgrade">📈 Прокачка</button>
-            <button class="menu-item" id="btn-tasks">🎯 Задания</button>
-            <button class="menu-item" style="opacity: 0.4; cursor: not-allowed;">🏆 Топ</button>
-        </div>
-    </div>
-
-    <script src="script.js"></script>
-</body>
-</html>
