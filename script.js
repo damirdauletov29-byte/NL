@@ -3,9 +3,9 @@ let balance = 0;
 let energy = 1000;
 const maxEnergy = 1000;
 const clickPower = 50; 
-let passiveIncomePerHour = 0; // Изначальный доход в час
+let passiveIncomePerHour = 0; 
 
-// База данных карточек (название, доход в час, начальная цена)
+// Список карточек
 let upgrades = [
     { id: 'orator', name: '🗣️ Ораторские курсы', income: 10, cost: 100 },
     { id: 'vk_clip', name: '📱 Съемка клика в ВК', income: 50, cost: 500 },
@@ -14,7 +14,7 @@ let upgrades = [
     { id: 'office', name: '🏛️ Открытие отделения', income: 5000, cost: 50000 }
 ];
 
-// Элементы интерфейса
+// Элементы экрана
 const balanceView = document.getElementById('balance-view');
 const incomeView = document.getElementById('income-view');
 const energyView = document.getElementById('energy-view');
@@ -23,11 +23,10 @@ const coinTrigger = document.getElementById('coin-trigger');
 const mainScreen = document.getElementById('main-screen');
 const upgradeScreen = document.getElementById('upgrade-screen');
 
-// Кнопки меню
 const btnMain = document.getElementById('btn-main');
 const btnUpgrade = document.getElementById('btn-upgrade');
 
-// Функция обновления экрана
+// Функция обновления цифр
 function updateDisplay() {
     balanceView.textContent = Math.floor(balance);
     incomeView.textContent = passiveIncomePerHour;
@@ -36,7 +35,7 @@ function updateDisplay() {
     energyFill.style.width = `${percentage}%`;
 }
 
-// Переключение экранов
+// КЛИК ПО КНОПКЕ "ГЛАВНАЯ"
 btnMain.addEventListener('click', () => {
     btnMain.classList.add('active');
     btnUpgrade.classList.remove('active');
@@ -44,15 +43,16 @@ btnMain.addEventListener('click', () => {
     upgradeScreen.classList.remove('active');
 });
 
+// КЛИК ПО КНОПКЕ "ПРОКАЧКА"
 btnUpgrade.addEventListener('click', () => {
     btnUpgrade.classList.add('active');
     btnMain.classList.remove('active');
     upgradeScreen.classList.add('active');
     mainScreen.classList.remove('active');
-    renderUpgrades(); // Перерисовываем карточки при открытии магазина
+    renderUpgrades(); // Рисуем карточки
 });
 
-// Клик по главной кнопке
+// Клик по большой кнопке
 coinTrigger.addEventListener('click', (event) => {
     if (energy >= 1) {
         balance += clickPower;
@@ -72,43 +72,46 @@ function createFloatingNumber(x, y) {
     setTimeout(() => num.remove(), 600);
 }
 
-// Функция создания карточек в магазине
+// Рисуем карточки на экране прокачки
 function renderUpgrades() {
-    upgradeScreen.innerHTML = ''; // Очищаем экран перед сборкой
+    upgradeScreen.innerHTML = ''; 
     
     upgrades.forEach((item) => {
         const card = document.createElement('div');
         card.classList.add('card');
         
+        // Название карточки и кнопка покупки
         card.innerHTML = `
             <div class="card-info">
                 <div class="card-name">${item.name}</div>
                 <div class="card-profit">+${item.income} ПО/час</div>
             </div>
-            <button class="card-cost" onclick="buyUpgrade('${item.id}')">${item.cost} ПО</button>
         `;
+
+        const buyBtn = document.createElement('button');
+        buyBtn.classList.add('card-cost');
+        buyBtn.textContent = `${item.cost} ПО`;
+        
+        // Нажатие на кнопку покупки карточки
+        buyBtn.addEventListener('click', () => {
+            if (balance >= item.cost) {
+                balance -= item.cost;
+                passiveIncomePerHour += item.income;
+                item.cost = Math.floor(item.cost * 1.5); // Увеличиваем цену на 50%
+                renderUpgrades(); // Перерисовываем карточки с новой ценой
+                updateDisplay();
+            } else {
+                alert('Недостаточно Политических Очков (ПО)!');
+            }
+        });
+
+        card.appendChild(buyBtn);
         upgradeScreen.appendChild(card);
     });
 }
 
-// Функция покупки карточки (Глобальная, чтобы кнопка её видела)
-window.buyUpgrade = function(id) {
-    const item = upgrades.find(u => u.id === id);
-    
-    if (balance >= item.cost) {
-        balance -= item.cost; // Списываем очки
-        passiveIncomePerHour += item.income; // Добавляем доход в час
-        item.cost = Math.floor(item.cost * 1.5); // Увеличиваем цену следующей карточки на 50%
-        
-        renderUpgrades(); // Обновляем список на экране
-        updateDisplay();  // Обновляем счетчики
-    } else {
-        alert('Недостаточно Политических Очков (ПО)!');
-    }
-}
-
 // ТАЙМЕРЫ
-// 1. Каждую секунду начисляем пассивный доход (доход в час делим на 3600 секунд)
+// Начисление пассивного дохода раз в секунду
 setInterval(() => {
     if (passiveIncomePerHour > 0) {
         balance += (passiveIncomePerHour / 3600);
@@ -116,7 +119,7 @@ setInterval(() => {
     }
 }, 1000);
 
-// 2. Каждые 1.5 секунды восстанавливаем энергию
+// Восстановление энергии
 setInterval(() => {
     if (energy < maxEnergy) {
         energy = Math.min(maxEnergy, energy + 3);
@@ -124,5 +127,5 @@ setInterval(() => {
     }
 }, 1500);
 
-// Первый запуск
+// Самый первый запуск
 updateDisplay();
