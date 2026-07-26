@@ -16,54 +16,84 @@
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             background: linear-gradient(135deg, #0d1b1e 0%, #00a896 100%);
             color: #ffffff;
+            height: 100vh;
             display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Общий контейнер для экранов */
+        .screen {
+            display: none;
             flex-direction: column;
             align-items: center;
             justify-content: space-between;
-            height: 100vh;
-            padding: 20px;
-            overflow: hidden;
+            flex: 1;
+            padding: 20px 20px 90px 20px; /* Отступ снизу под меню */
+            height: calc(100vh - 75px);
         }
-        /* Шапка с балансом */
-        .header {
+        .screen.active {
+            display: flex;
+        }
+
+        /* Заглушки для пустых разделов */
+        .placeholder-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
             text-align: center;
-            margin-top: 20px;
+            gap: 15px;
+        }
+        .placeholder-content h2 {
+            font-size: 24px;
+            color: #00cbd6;
+        }
+
+        /* Шапка с балансом (вынесена отдельно, видна везде) */
+        .global-header {
+            text-align: center;
+            padding: 15px 0 5px;
             width: 100%;
+            background: rgba(13, 27, 30, 0.4);
+            backdrop-filter: blur(10px);
         }
         .title {
-            font-size: 16px;
+            font-size: 13px;
             text-transform: uppercase;
             letter-spacing: 2px;
             color: #e0f7f4;
             opacity: 0.8;
-            margin-bottom: 5px;
+            margin-bottom: 3px;
         }
         .score-container {
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 10px;
         }
         .score {
-            font-size: 42px;
+            font-size: 36px;
             font-weight: 800;
             text-shadow: 0 0 15px rgba(255,255,255,0.3);
         }
+
         /* Главная кнопка-слон */
         .click-area {
             position: relative;
-            width: 80vw;
-            max-width: 320px;
+            width: 75vw;
+            max-width: 300px;
             aspect-ratio: 1;
             display: flex;
             align-items: center;
             justify-content: center;
+            margin: auto 0;
         }
         .slon-btn {
             width: 100%;
             height: 100%;
             border-radius: 50%;
-            background-image: url('slon.jpg'); /* Сюда сохраните вашу картинку */
+            background-image: url('slon.jpg');
             background-size: cover;
             background-position: center;
             border: 6px solid #00cbd6;
@@ -76,6 +106,7 @@
         .slon-btn:active {
             transform: scale(0.95);
         }
+
         /* Всплывающие цифры (+1) */
         .tap-pop {
             position: absolute;
@@ -90,12 +121,11 @@
             0% { opacity: 1; transform: translateY(0) scale(1); }
             100% { opacity: 0; transform: translateY(-120px) scale(1.2); }
         }
-        /* Прогресс-бар энергии */
+
+        /* Статистика энергии */
         .footer-stats {
             width: 100%;
             max-width: 400px;
-            margin-bottom: 20px;
-            padding: 0 10px;
         }
         .energy-text {
             display: flex;
@@ -106,7 +136,7 @@
         }
         .progress-bar {
             width: 100%;
-            height: 14px;
+            height: 12px;
             background: rgba(255, 255, 255, 0.1);
             border-radius: 10px;
             overflow: hidden;
@@ -118,32 +148,126 @@
             background: linear-gradient(90deg, #00cbd6, #00ffcc);
             border-radius: 10px;
             transition: width 0.1s ease;
-            box-shadow: 0 0 10px rgba(0, 255, 204, 0.5);
+        }
+
+        /* НИЖНЕЕ МЕНЮ НАВИГАЦИИ */
+        .navbar {
+            position: fixed;
+            bottom: 15px;
+            left: 5%;
+            width: 90%;
+            max-width: 400px;
+            height: 65px;
+            background: rgba(20, 40, 43, 0.85);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(0, 203, 214, 0.2);
+            border-radius: 20px;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            z-index: 1000;
+        }
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #a2b7b5;
+            text-decoration: none;
+            font-size: 11px;
+            font-weight: 500;
+            width: 22%;
+            height: 100%;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .nav-icon {
+            font-size: 22px;
+            margin-bottom: 2px;
+            transition: transform 0.2s ease;
+        }
+        /* Стили для активной кнопки меню */
+        .nav-item.active {
+            color: #00ffcc;
+            text-shadow: 0 0 10px rgba(0, 255, 204, 0.3);
+        }
+        .nav-item.active .nav-icon {
+            transform: scale(1.15);
         }
     </style>
 </head>
 <body>
 
-    <div class="header">
+    <!-- Общая шапка: баланс виден на любом экране -->
+    <div class="global-header">
         <div class="title">Собрано голосов</div>
         <div class="score-container">
             <span class="score" id="score">0</span>
         </div>
     </div>
 
-    <div class="click-area" id="clickArea">
-        <button class="slon-btn" id="slonBtn"></button>
+    <!-- ЭКРАН 1: ТАПАЛКА (ГЛАВНЫЙ) -->
+    <div class="screen active" id="screen-tap">
+        <div class="click-area" id="clickArea">
+            <button class="slon-btn" id="slonBtn"></button>
+        </div>
+
+        <div class="footer-stats">
+            <div class="energy-text">
+                <span>⚡ Энергия</span>
+                <span id="energyText">1000 / 1000</span>
+            </div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="energyFill"></div>
+            </div>
+        </div>
     </div>
 
-    <div class="footer-stats">
-        <div class="energy-text">
-            <span>⚡ Энергия</span>
-            <span id="energyText">1000 / 1000</span>
-        </div>
-        <div class="progress-bar">
-            <div class="progress-fill" id="energyFill"></div>
+    <!-- ЭКРАН 2: ПРОКАЧКА (УЛУЧШЕНИЯ) -->
+    <div class="screen" id="screen-upgrade">
+        <div class="placeholder-content">
+            <h2>📈 Штаб партии</h2>
+            <p>Здесь будут карточки улучшений для прокачки пассивного дохода «Голосов в час».</p>
         </div>
     </div>
+
+    <!-- ЭКРАН 3: КВЕСТЫ (ЗАДАНИЯ) -->
+    <div class="screen" id="screen-tasks">
+        <div class="placeholder-content">
+            <h2>💼 Поручения</h2>
+            <p>Выполняйте задания: подпишитесь на каналы партии, зовите сторонников и получайте бонусы.</p>
+        </div>
+    </div>
+
+    <!-- ЭКРАН 4: ДРУЗЬЯ (РЕФЕРАЛЫ) -->
+    <div class="screen" id="screen-friends">
+        <div class="placeholder-content">
+            <h2>👥 Сторонники</h2>
+            <p>Приглашайте друзей по реферальной ссылке и получайте процент от их кликов!</p>
+        </div>
+    </div>
+
+    <!-- НИЖНЯЯ ПАНЕЛЬ НАВИГАЦИИ -->
+    <nav class="navbar">
+        <div class="nav-item active" data-screen="screen-tap">
+            <span class="nav-icon">🐘</span>
+            <span>Тап</span>
+        </div>
+        <div class="nav-item" data-screen="screen-upgrade">
+            <span class="nav-icon">📈</span>
+            <span>Прокачка</span>
+        </div>
+        <div class="nav-item" data-screen="screen-tasks">
+            <span class="nav-icon">💼</span>
+            <span>Задания</span>
+        </div>
+        <div class="nav-item" data-screen="screen-friends">
+            <span class="nav-icon">👥</span>
+            <span>Друзья</span>
+        </div>
+    </nav>
 
     <script src="script.js"></script>
 </body>
