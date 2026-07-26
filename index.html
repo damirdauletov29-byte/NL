@@ -1,1 +1,253 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Новые Люди: Развитие</title>
+    <!-- Подключаем современные иконки Lucide -->
+    <script src="https://unpkg.com"></script>
+    <style>
+        /* Общие настройки для эффекта мобильного приложения */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-user-select: none;
+        }
 
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: #0d1b1e;
+            color: #ffffff;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        /* Контейнер приложения с пропорциями смартфона */
+        #app {
+            width: 100%;
+            max-width: 480px;
+            height: 100vh;
+            background: linear-gradient(180deg, #0f2b30 0%, #0a171a 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+            box-shadow: 0 0 30px rgba(0, 212, 180, 0.1);
+        }
+
+        /* Хедер (Шапка) */
+        header {
+            padding: 20px;
+            background: rgba(15, 43, 48, 0.7);
+            border-bottom: 1px solid rgba(0, 212, 180, 0.2);
+            backdrop-filter: blur(10px);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .user-info .username {
+            font-size: 16px;
+            font-weight: 600;
+            color: #00d4b4;
+        }
+
+        .balance-container {
+            display: flex;
+            align-items: center;
+            background: rgba(0, 212, 180, 0.15);
+            padding: 8px 14px;
+            border-radius: 20px;
+            border: 1px solid rgba(0, 212, 180, 0.3);
+        }
+
+        .balance-container i {
+            color: #00d4b4;
+            margin-right: 6px;
+        }
+
+        .balance-value {
+            font-size: 18px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+
+        /* Главная рабочая область */
+        main {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        /* Экраны для вкладок */
+        .screen {
+            display: none;
+            width: 100%;
+            height: 100%;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+
+        .screen.active {
+            display: flex;
+        }
+
+        /* Большая кнопка-кликер */
+        .click-button {
+            width: 220px;
+            height: 220px;
+            border-radius: 50%;
+            background: radial-gradient(circle, #00f0cc 0%, #00a38b 100%);
+            border: 8px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 0 40px rgba(0, 212, 180, 0.4), inset 0 0 20px rgba(255, 255, 255, 0.3);
+            color: #0a171a;
+            font-size: 20px;
+            font-weight: 800;
+            text-transform: uppercase;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: transform 0.05s ease, box-shadow 0.1s ease;
+            outline: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .click-button:active {
+            transform: scale(0.94);
+            box-shadow: 0 0 20px rgba(0, 212, 180, 0.6), inset 0 0 10px rgba(0, 0, 0, 0.5);
+        }
+
+        /* Текст-подсказка под кнопкой */
+        .hint-text {
+            margin-top: 25px;
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.6);
+            letter-spacing: 1px;
+        }
+
+        /* Нижнее меню (Таббар) */
+        nav {
+            background: rgba(10, 23, 26, 0.9);
+            border-top: 1px solid rgba(0, 212, 180, 0.15);
+            display: flex;
+            justify-content: space-around;
+            padding: 12px 0;
+            padding-bottom: calc(12px + env(safe-area-inset-bottom)); /* Учет челок iPhone */
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: none;
+            border: none;
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            width: 30%;
+            transition: color 0.2s ease;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .nav-item i {
+            margin-bottom: 5px;
+            transition: transform 0.2s ease;
+        }
+
+        .nav-item.active {
+            color: #00d4b4;
+        }
+
+        .nav-item.active i {
+            transform: translateY(-2px);
+        }
+
+        /* Временные заглушки для контента других страниц */
+        .placeholder-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px dashed rgba(0, 212, 180, 0.3);
+            padding: 30px;
+            border-radius: 12px;
+            max-width: 80%;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="app">
+        <!-- Шапка -->
+        <header>
+            <div class="user-info">
+                <div class="username" id="username">@сторонник</div>
+            </div>
+            <div class="balance-container">
+                <!-- Иконка щита (прогресс/защита интересов) -->
+                <i data-lucide="shield"></i>
+                <span class="balance-value" id="balance">0</span>
+            </div>
+        </header>
+
+        <!-- Основной контент (Вкладки) -->
+        <main>
+            <!-- Главная страница (Кликер) -->
+            <section id="screen-main" class="screen active">
+                <button class="click-button" id="click-btn">
+                    Развивать<br>регионы
+                </button>
+                <div class="hint-text">Жми, чтобы строить будущее</div>
+            </section>
+
+            <!-- Проекты -->
+            <section id="screen-projects" class="screen">
+                <div class="placeholder-card">
+                    <h3>Модернизация</h3>
+                    <p style="color: rgba(255,255,255,0.6); margin-top: 10px;">Здесь появятся апгрейды: новые школы, поддержка бизнеса и эко-инициативы.</p>
+                </div>
+            </section>
+
+            <!-- Квесты -->
+            <section id="screen-quests" class="screen">
+                <div class="placeholder-card">
+                    <h3>Важные задачи</h3>
+                    <p style="color: rgba(255,255,255,0.6); margin-top: 10px;">Здесь будут текстовые задания и региональные вызовы.</p>
+                </div>
+            </section>
+        </main>
+
+        <!-- Нижняя навигация -->
+        <nav>
+            <button class="nav-item active" onclick="switchTab('main')">
+                <i data-lucide="home"></i>
+                Главная
+            </button>
+            <button class="nav-item" onclick="switchTab('projects')">
+                <i data-lucide="briefcase"></i>
+                Проекты
+            </button>
+            <button class="nav-item" onclick="switchTab('check-square')">
+                <i data-lucide="clipboard-list"></i>
+                Квесты
+            </button>
+        </nav>
+    </div>
+
+    <!-- Подключаем логику игры -->
+    <script src="script.js"></script>
+    <script>
+        // Инициализация иконок после загрузки DOM
+        lucide.createIcons();
+    </script>
+</body>
+</html>
