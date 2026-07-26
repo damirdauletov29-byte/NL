@@ -9,52 +9,48 @@
 body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background: linear-gradient(135deg, #0d1b1e 0%, #00a896 100%); color: #ffffff; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
 .screen { display: none; flex-direction: column; align-items: center; justify-content: space-between; flex: 1; padding: 20px 20px 90px 20px; height: calc(100vh - 75px); overflow-y: auto; }
 .screen.active { display: flex; }
+
+/* Шапка */
 .global-header { text-align: center; padding: 15px 0 5px; width: 100%; background: rgba(13, 27, 30, 0.4); backdrop-filter: blur(10px); z-index: 5; }
 .title { font-size: 13px; text-transform: uppercase; letter-spacing: 2px; color: #e0f7f4; opacity: 0.8; margin-bottom: 3px; }
 .score-container { display: flex; align-items: center; justify-content: center; gap: 10px; }
 .score { font-size: 36px; font-weight: 800; text-shadow: 0 0 15px rgba(255,255,255,0.3); }
+.vph-label { font-size: 12px; color: #00cbd6; background: rgba(0,0,0,0.3); padding: 2px 8px; border-radius: 10px; }
 
-/* --- РАНГИ --- */
-.rank-container { display: flex; flex-direction: column; align-items: center; margin-top: 10px; width: 100%; }
-.rank-info { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: bold; color: #00cbd6; margin-bottom: 5px; }
-.level-progress-bar { width: 80%; height: 6px; background: rgba(255, 255, 255, 0.1); border-radius: 5px; overflow: hidden; }
-.level-fill { height: 100%; width: 0%; background: #00ffcc; border-radius: 5px; transition: width 0.3s ease; }
-
+/* Слон */
 .click-area { position: relative; width: 75vw; max-width: 300px; aspect-ratio: 1; display: flex; align-items: center; justify-content: center; margin: auto 0; z-index: 10; }
 .slon-btn { width: 100%; height: 100%; border-radius: 50%; background-image: url('slon.jpg'); background-size: cover; background-position: center; border: 6px solid #00cbd6; box-shadow: 0 0 30px rgba(0, 203, 214, 0.4); cursor: pointer; transition: transform 0.05s ease; outline: none; -webkit-tap-highlight-color: transparent; z-index: 10; }
 .slon-btn:active { transform: scale(0.95); }
 .tap-pop { position: absolute; font-size: 32px; font-weight: 900; color: #00cbd6; text-shadow: 0 0 10px rgba(0,0,0,0.5); pointer-events: none; animation: floatUp 0.6s ease-out forwards; z-index: 20; }
 @keyframes floatUp { 0% { opacity: 1; transform: translateY(0) scale(1); } 100% { opacity: 0; transform: translateY(-120px) scale(1.2); } }
+
+/* Энергия */
 .footer-stats { width: 100%; max-width: 400px; }
 .energy-text { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 8px; font-weight: bold; }
 .progress-bar { width: 100%; height: 12px; background: rgba(255, 255, 255, 0.1); border-radius: 10px; overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.1); }
 .progress-fill { height: 100%; width: 100%; background: linear-gradient(90deg, #00cbd6, #00ffcc); border-radius: 10px; transition: width 0.1s ease; }
+
+/* Меню */
 .navbar { position: fixed; bottom: 15px; left: 5%; width: 90%; max-width: 400px; height: 65px; background: rgba(20, 40, 43, 0.85); backdrop-filter: blur(15px); border: 1px solid rgba(0, 203, 214, 0.2); border-radius: 20px; display: flex; justify-content: space-around; align-items: center; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4); z-index: 1000; }
 .nav-item { display: flex; flex-direction: column; align-items: center; justify-content: center; color: #a2b7b5; text-decoration: none; font-size: 11px; font-weight: 500; width: 22%; height: 100%; cursor: pointer; transition: all 0.2s ease; -webkit-tap-highlight-color: transparent; }
 .nav-icon { font-size: 22px; margin-bottom: 2px; transition: transform 0.2s ease; }
 .nav-item.active { color: #00ffcc; text-shadow: 0 0 10px rgba(0, 255, 204, 0.3); }
 .nav-item.active .nav-icon { transform: scale(1.15); }
 
-/* Стили для улучшений */
+/* Заглушки */
+.placeholder-content { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; text-align: center; gap: 15px; }
+.placeholder-content h2 { font-size: 24px; color: #00cbd6; }
+
+/* Карточки улучшений */
 .upgrades-list { width: 100%; max-width: 400px; display: flex; flex-direction: column; gap: 12px; padding-bottom: 20px; }
-.upgrade-card { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(0, 203, 214, 0.1); border-radius: 15px; padding: 12px; display: flex; align-items: center; gap: 12px; }
+.upgrade-card { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(0, 203, 214, 0.1); border-radius: 15px; padding: 12px; display: flex; align-items: center; gap: 12px; transition: transform 0.1s; }
+.upgrade-card:active { transform: scale(0.98); }
 .upgrade-icon { width: 50px; height: 50px; background: rgba(0, 203, 214, 0.1); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 24px; }
 .upgrade-info { flex: 1; }
 .upgrade-name { font-weight: bold; font-size: 15px; margin-bottom: 4px; }
 .upgrade-bonus { font-size: 12px; color: #00cbd6; }
 .upgrade-cost { background: #00cbd6; color: #0d1b1e; padding: 6px 12px; border-radius: 8px; font-weight: bold; font-size: 13px; min-width: 70px; text-align: center; }
 .upgrade-card.disabled { opacity: 0.5; filter: grayscale(1); }
-
-/* Стили для заданий */
-.tasks-list { width: 100%; max-width: 400px; display: flex; flex-direction: column; gap: 12px; padding-bottom: 20px; }
-.task-card { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(0, 203, 214, 0.1); border-radius: 15px; padding: 15px; display: flex; align-items: center; justify-content: space-between; }
-.task-info { display: flex; align-items: center; gap: 12px; flex: 1; }
-.task-icon { font-size: 24px; }
-.task-name { font-weight: bold; font-size: 14px; }
-.task-reward { font-size: 12px; color: #00cbd6; margin-top: 2px; }
-.task-btn { background: #00cbd6; color: #0d1b1e; border: none; padding: 8px 16px; border-radius: 8px; font-weight: bold; font-size: 12px; cursor: pointer; min-width: 90px; transition: all 0.2s; }
-.task-btn.checking { background: #555; color: #ccc; cursor: wait; }
-.task-btn.completed { background: #2ecc71; color: #fff; cursor: default; }
 </style>
 </head>
 <body>
@@ -63,16 +59,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helve
     <div class="title">Собрано голосов</div>
     <div class="score-container">
         <span class="score" id="score">0</span>
-    </div>
-    <!-- БЛОК С РАНГОМ -->
-    <div class="rank-container">
-        <div class="rank-info">
-            <span class="rank-icon" id="rankIcon">👶</span>
-            <span id="rankName">Новичок</span>
-        </div>
-        <div class="level-progress-bar">
-            <div class="level-fill" id="levelFill"></div>
-        </div>
+        <span class="vph-label" id="vphDisplay">+0/час</span>
     </div>
 </div>
 
@@ -94,17 +81,19 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helve
 
 <!-- ЭКРАН 2: ПРОКАЧКА -->
 <div class="screen" id="screen-upgrade">
-    <h2 style="margin-bottom: 15px; color: #00cbd6;">📈 Штаб партии</h2>
+    <h2 style="margin-bottom: 15px; color: #00cbd6; width: 100%;">📈 Штаб партии</h2>
     <div class="upgrades-list" id="upgradesList"></div>
 </div>
 
-<!-- ЭКРАН 3: КВЕСТЫ -->
+<!-- ЭКРАН 3: КВЕСТЫ (ЗАГЛУШКА) -->
 <div class="screen" id="screen-tasks">
-    <h2 style="margin-bottom: 15px; color: #00cbd6;">💼 Поручения</h2>
-    <div class="tasks-list" id="tasksList"></div>
+    <div class="placeholder-content">
+        <h2>💼 Поручения</h2>
+        <p>Выполняйте задания: подпишитесь на каналы партии, зовите сторонников и получайте бонусы.</p>
+    </div>
 </div>
 
-<!-- ЭКРАН 4: ДРУЗЬЯ -->
+<!-- ЭКРАН 4: ДРУЗЬЯ (ЗАГЛУШКА) -->
 <div class="screen" id="screen-friends">
     <div class="placeholder-content">
         <h2>👥 Сторонники</h2>
