@@ -1,4 +1,3 @@
-```html
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -6,549 +5,142 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Тапай за Новых!</title>
 <style>
-* {
-box-sizing: border-box;
-user-select: none;
--webkit-user-select: none;
-margin: 0;
-padding: 0;
-}
-body {
-font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-background: linear-gradient(135deg, #0d1b1e 0%, #00a896 100%);
-color: #ffffff;
-height: 100vh;
-display: flex;
-flex-direction: column;
-overflow: hidden;
-}
-/* Общий контейнер для экранов */
-.screen {
-display: none;
-flex-direction: column;
-align-items: center;
-justify-content: space-between;
-flex: 1;
-padding: 20px 20px 90px 20px; /* Отступ снизу под меню */
-height: calc(100vh - 75px);
-}
-.screen.active {
-display: flex;
-}
-/* Заглушки для пустых разделов */
-.placeholder-content {
-display: flex;
-flex-direction: column;
-align-items: center;
-justify-content: center;
-height: 100%;
-text-align: center;
-gap: 15px;
-}
-.placeholder-content h2 {
-font-size: 24px;
-color: #00cbd6;
-}
-/* Шапка с балансом (вынесена отдельно, видна везде) */
-.global-header {
-text-align: center;
-padding: 15px 0 5px;
-width: 100%;
-background: rgba(13, 27, 30, 0.4);
-backdrop-filter: blur(10px);
-}
-.title {
-font-size: 13px;
-text-transform: uppercase;
-letter-spacing: 2px;
-color: #e0f7f4;
-opacity: 0.8;
-margin-bottom: 3px;
-}
-.score-container {
-display: flex;
-align-items: center;
-justify-content: center;
-}
-.score {
-font-size: 36px;
-font-weight: 800;
-text-shadow: 0 0 15px rgba(255,255,255,0.3);
-}
-/* Главная кнопка-слон */
-.click-area {
-position: relative;
-width: 75vw;
-max-width: 300px;
-aspect-ratio: 1;
-display: flex;
-align-items: center;
-justify-content: center;
-margin: auto 0;
-}
-.slon-btn {
-width: 100%;
-height: 100%;
-border-radius: 50%;
-background-image: url('slon.jpg');
-background-size: cover;
-background-position: center;
-border: 6px solid #00cbd6;
-box-shadow: 0 0 30px rgba(0, 203, 214, 0.4);
-cursor: pointer;
-transition: transform 0.05s ease;
-outline: none;
--webkit-tap-highlight-color: transparent;
-}
-.slon-btn:active {
-transform: scale(0.95);
-}
-/* Всплывающие цифры (+1) */
-.tap-pop {
-position: absolute;
-font-size: 32px;
-font-weight: 900;
-color: #00cbd6;
-text-shadow: 0 0 10px rgba(0,0,0,0.5);
-pointer-events: none;
-animation: floatUp 0.6s ease-out forwards;
-}
-@keyframes floatUp {
-0% { opacity: 1; transform: translateY(0) scale(1); }
-100% { opacity: 0; transform: translateY(-120px) scale(1.2); }
-}
-/* Статистика энергии */
-.footer-stats {
-width: 100%;
-max-width: 400px;
-}
-.energy-text {
-display: flex;
-justify-content: space-between;
-font-size: 14px;
-margin-bottom: 8px;
-font-weight: bold;
-}
-.progress-bar {
-width: 100%;
-height: 12px;
-background: rgba(255, 255, 255, 0.1);
-border-radius: 10px;
-overflow: hidden;
-border: 1px solid rgba(255, 255, 255, 0.1);
-}
-.progress-fill {
-height: 100%;
-width: 100%;
-background: linear-gradient(90deg, #00cbd6, #00ffcc);
-border-radius: 10px;
-transition: width 0.1s ease;
-}
+/* ... Ваши старые стили остаются без изменений до .screen ... */
+* { box-sizing: border-box; user-select: none; -webkit-user-select: none; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background: linear-gradient(135deg, #0d1b1e 0%, #00a896 100%); color: #ffffff; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+.screen { display: none; flex-direction: column; align-items: center; justify-content: space-between; flex: 1; padding: 20px 20px 90px 20px; height: calc(100vh - 75px); overflow-y: auto; }
+.screen.active { display: flex; }
+.global-header { text-align: center; padding: 15px 0 5px; width: 100%; background: rgba(13, 27, 30, 0.4); backdrop-filter: blur(10px); }
+.title { font-size: 13px; text-transform: uppercase; letter-spacing: 2px; color: #e0f7f4; opacity: 0.8; margin-bottom: 3px; }
+.score-container { display: flex; align-items: center; justify-content: center; gap: 10px; }
+.score { font-size: 36px; font-weight: 800; text-shadow: 0 0 15px rgba(255,255,255,0.3); }
+.vph-label { font-size: 12px; color: #00cbd6; background: rgba(0,0,0,0.3); padding: 2px 8px; border-radius: 10px; }
+.click-area { position: relative; width: 75vw; max-width: 300px; aspect-ratio: 1; display: flex; align-items: center; justify-content: center; margin: auto 0; }
+.slon-btn { width: 100%; height: 100%; border-radius: 50%; background-image: url('slon.jpg'); background-size: cover; background-position: center; border: 6px solid #00cbd6; box-shadow: 0 0 30px rgba(0, 203, 214, 0.4); cursor: pointer; transition: transform 0.05s ease; outline: none; -webkit-tap-highlight-color: transparent; }
+.slon-btn:active { transform: scale(0.95); }
+.tap-pop { position: absolute; font-size: 32px; font-weight: 900; color: #00cbd6; text-shadow: 0 0 10px rgba(0,0,0,0.5); pointer-events: none; animation: floatUp 0.6s ease-out forwards; }
+@keyframes floatUp { 0% { opacity: 1; transform: translateY(0) scale(1); } 100% { opacity: 0; transform: translateY(-120px) scale(1.2); } }
+.footer-stats { width: 100%; max-width: 400px; }
+.energy-text { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 8px; font-weight: bold; }
+.progress-bar { width: 100%; height: 12px; background: rgba(255, 255, 255, 0.1); border-radius: 10px; overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.1); }
+.progress-fill { height: 100%; width: 100%; background: linear-gradient(90deg, #00cbd6, #00ffcc); border-radius: 10px; transition: width 0.1s ease; }
+.navbar { position: fixed; bottom: 15px; left: 5%; width: 90%; max-width: 400px; height: 65px; background: rgba(20, 40, 43, 0.85); backdrop-filter: blur(15px); border: 1px solid rgba(0, 203, 214, 0.2); border-radius: 20px; display: flex; justify-content: space-around; align-items: center; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4); z-index: 1000; }
+.nav-item { display: flex; flex-direction: column; align-items: center; justify-content: center; color: #a2b7b5; text-decoration: none; font-size: 11px; font-weight: 500; width: 22%; height: 100%; cursor: pointer; transition: all 0.2s ease; -webkit-tap-highlight-color: transparent; }
+.nav-icon { font-size: 22px; margin-bottom: 2px; transition: transform 0.2s ease; }
+.nav-item.active { color: #00ffcc; text-shadow: 0 0 10px rgba(0, 255, 204, 0.3); }
+.nav-item.active .nav-icon { transform: scale(1.15); }
 
-/* Стили для экрана прокачки */
-.upgrade-list {
-display: flex;
-flex-direction: column;
-gap: 15px;
-width: 100%;
-max-width: 400px;
+/* --- НОВЫЕ СТИЛИ ДЛЯ УЛУЧШЕНИЙ --- */
+.upgrades-list {
+    width: 100%;
+    max-width: 400px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding-bottom: 20px;
 }
 .upgrade-card {
-background: rgba(20, 40, 43, 0.85);
-backdrop-filter: blur(15px);
-border: 1px solid rgba(0, 203, 214, 0.2);
-border-radius: 15px;
-padding: 15px;
-display: flex;
-flex-direction: column;
-align-items: flex-start;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(0, 203, 214, 0.1);
+    border-radius: 15px;
+    padding: 12px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    transition: transform 0.1s;
 }
-.upgrade-header {
-display: flex;
-justify-content: space-between;
-width: 100%;
+.upgrade-card:active { transform: scale(0.98); }
+.upgrade-icon {
+    width: 50px;
+    height: 50px;
+    background: rgba(0, 203, 214, 0.1);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
 }
-.upgrade-name {
-font-size: 18px;
-font-weight: bold;
-color: #00ffcc;
-}
-.upgrade-level {
-font-size: 14px;
-color: #a2b7b5;
-}
-.upgrade-profit {
-font-size: 14px;
-color: #e0f7f4;
-margin-top: 5px;
-}
+.upgrade-info { flex: 1; }
+.upgrade-name { font-weight: bold; font-size: 15px; margin-bottom: 4px; }
+.upgrade-bonus { font-size: 12px; color: #00cbd6; }
 .upgrade-cost {
-font-size: 16px;
-color: #ffd700;
-font-weight: bold;
-margin-top: 5px;
+    background: #00cbd6;
+    color: #0d1b1e;
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-weight: bold;
+    font-size: 13px;
+    min-width: 70px;
+    text-align: center;
 }
-.upgrade-btn {
-margin-top: 10px;
-padding: 8px 15px;
-background: linear-gradient(135deg, #00a896 0%, #00cbd6 100%);
-border: none;
-border-radius: 10px;
-color: white;
-font-weight: bold;
-cursor: pointer;
-width: 100%;
-text-align: center;
-transition: background 0.2s;
-}
-.upgrade-btn:hover {
-opacity: 0.9;
-}
-.upgrade-btn:disabled {
-background: #444;
-cursor: not-allowed;
-opacity: 0.6;
-}
-
-/* НИЖНЕЕ МЕНЮ НАВИГАЦИИ */
-.navbar {
-position: fixed;
-bottom: 15px;
-left: 5%;
-width: 90%;
-max-width: 400px;
-height: 65px;
-background: rgba(20, 40, 43, 0.85);
-backdrop-filter: blur(15px);
-border: 1px solid rgba(0, 203, 214, 0.2);
-border-radius: 20px;
-display: flex;
-justify-content: space-around;
-align-items: center;
-box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-z-index: 1000;
-}
-.nav-item {
-display: flex;
-flex-direction: column;
-align-items: center;
-justify-content: center;
-color: #a2b7b5;
-text-decoration: none;
-font-size: 11px;
-font-weight: 500;
-width: 22%;
-height: 100%;
-cursor: pointer;
-transition: all 0.2s ease;
--webkit-tap-highlight-color: transparent;
-}
-.nav-icon {
-font-size: 22px;
-margin-bottom: 2px;
-transition: transform 0.2s ease;
-}
-.nav-item.active {
-color: #00ffcc;
-text-shadow: 0 0 10px rgba(0, 255, 204, 0.3);
-}
-.nav-item.active .nav-icon {
-transform: scale(1.15);
-}
+.upgrade-card.disabled { opacity: 0.5; filter: grayscale(1); }
 </style>
 </head>
 <body>
-<!-- Общая шапка: баланс виден на любом экране -->
+
 <div class="global-header">
-<div class="title">Собрано голосов</div>
-<div class="score-container">
-<span class="score" id="score">0</span>
+    <div class="title">Собрано голосов</div>
+    <div class="score-container">
+        <span class="score" id="score">0</span>
+        <span class="vph-label" id="vphDisplay">+0/час</span>
+    </div>
 </div>
-</div>
-<!-- ЭКРАН 1: ТАПАЛКА (ГЛАВНЫЙ) -->
+
+<!-- ЭКРАН 1: ТАПАЛКА -->
 <div class="screen active" id="screen-tap">
-<div class="click-area" id="clickArea">
-<button class="slon-btn" id="slonBtn"></button>
+    <div class="click-area" id="clickArea">
+        <button class="slon-btn" id="slonBtn"></button>
+    </div>
+    <div class="footer-stats">
+        <div class="energy-text">
+            <span>⚡ Энергия</span>
+            <span id="energyText">1000 / 1000</span>
+        </div>
+        <div class="progress-bar">
+            <div class="progress-fill" id="energyFill"></div>
+        </div>
+    </div>
 </div>
-<div class="footer-stats">
-<div class="energy-text">
-<span>⚡ Энергия</span>
-<span id="energyText">1000 / 1000</span>
-</div>
-<div class="progress-bar">
-<div class="progress-fill" id="energyFill"></div>
-</div>
-</div>
-</div>
-<!-- ЭКРАН 2: ПРОКАЧКА (УЛУЧШЕНИЯ) -->
+
+<!-- ЭКРАН 2: ПРОКАЧКА -->
 <div class="screen" id="screen-upgrade">
-<div class="upgrade-list" id="upgradeList">
-<!-- Карты улучшений будут добавлены здесь скриптом -->
+    <h2 style="margin-bottom: 15px; color: #00cbd6;">📈 Штаб партии</h2>
+    <div class="upgrades-list" id="upgradesList">
+        <!-- Карточки будут добавлены через JS -->
+    </div>
 </div>
-</div>
-<!-- ЭКРАН 3: КВЕСТЫ (ЗАДАНИЯ) -->
+
+<!-- ЭКРАН 3: КВЕСТЫ -->
 <div class="screen" id="screen-tasks">
-<div class="placeholder-content">
-<h2>💼 Поручения</h2>
-<p>Выполняйте задания: подпишитесь на каналы партии, зовите сторонников и получайте бонусы.</p>
+    <div class="placeholder-content">
+        <h2>💼 Поручения</h2>
+        <p>Выполняйте задания: подпишитесь на каналы партии, зовите сторонников и получайте бонусы.</p>
+    </div>
 </div>
-</div>
-<!-- ЭКРАН 4: ДРУЗЬЯ (РЕФЕРАЛЫ) -->
+
+<!-- ЭКРАН 4: ДРУЗЬЯ -->
 <div class="screen" id="screen-friends">
-<div class="placeholder-content">
-<h2>👥 Сторонники</h2>
-<p>Приглашайте друзей по реферальной ссылке и получайте процент от их кликов!</p>
+    <div class="placeholder-content">
+        <h2>👥 Сторонники</h2>
+        <p>Приглашайте друзей по реферальной ссылке и получайте процент от их кликов!</p>
+    </div>
 </div>
-</div>
-<!-- НИЖНЯЯ ПАНЕЛЬ НАВИГАЦИИ -->
+
 <nav class="navbar">
-<div class="nav-item active" data-screen="screen-tap">
-<span class="nav-icon">🐘</span>
-<span>Тап</span>
-</div>
-<div class="nav-item" data-screen="screen-upgrade">
-<span class="nav-icon">📈</span>
-<span>Прокачка</span>
-</div>
-<div class="nav-item" data-screen="screen-tasks">
-<span class="nav-icon">💼</span>
-<span>Задания</span>
-</div>
-<div class="nav-item" data-screen="screen-friends">
-<span class="nav-icon">👥</span>
-<span>Друзья</span>
-</div>
+    <div class="nav-item active" data-screen="screen-tap">
+        <span class="nav-icon">🐘</span><span>Тап</span>
+    </div>
+    <div class="nav-item" data-screen="screen-upgrade">
+        <span class="nav-icon">📈</span><span>Прокачка</span>
+    </div>
+    <div class="nav-item" data-screen="screen-tasks">
+        <span class="nav-icon">💼</span><span>Задания</span>
+    </div>
+    <div class="nav-item" data-screen="screen-friends">
+        <span class="nav-icon">👥</span><span>Друзья</span>
+    </div>
 </nav>
-<script>
-// --- ИГРОВАЯ ЛОГИКА (ТАПАЛКА, ЭНЕРГИЯ И СОХРАНЕНИЕ) ---
-let score = 0;
-let energy = 1000;
-const maxEnergy = 1000;
-const clickPower = 1;
-const energyRegenSpeed = 3;
-const scoreEl = document.getElementById('score');
-const energyTextEl = document.getElementById('energyText');
-const energyFillEl = document.getElementById('energyFill');
-const clickArea = document.getElementById('clickArea');
-const slonBtn = document.getElementById('slonBtn');
 
-// --- ЛОГИКА ПРОКАЧКИ ---
-let upgrades = [
-    { id: 'click_power', name: 'Сила удара', description: 'Увеличивает количество голосов за один тап', baseCost: 100, costGrowth: 1.15, level: 0, profitPerClick: 1, type: 'click' },
-    { id: 'auto_clicker', name: 'Авто-кликер', description: 'Автоматически собирает голоса', baseCost: 500, costGrowth: 1.3, level: 0, profitPerHour: 10, type: 'passive' },
-    { id: 'energy_limit', name: 'Энергия', description: 'Увеличивает максимальный запас энергии', baseCost: 200, costGrowth: 1.2, level: 0, energyIncrease: 100, type: 'energy' },
-    { id: 'regen_speed', name: 'Восстановление', description: 'Увеличивает скорость восстановления энергии', baseCost: 300, costGrowth: 1.25, level: 0, regenIncrease: 1, type: 'regen' }
-];
-
-function getUpgradeCost(upgrade) {
-    return Math.floor(upgrade.baseCost * Math.pow(upgrade.costGrowth, upgrade.level));
-}
-
-function applyUpgrade(upgradeId) {
-    const upgrade = upgrades.find(u => u.id === upgradeId);
-    if (!upgrade) return false;
-
-    const cost = getUpgradeCost(upgrade);
-    if (score >= cost) {
-        score -= cost;
-        upgrade.level++;
-
-        // Применение эффекта улучшения
-        if (upgrade.type === 'click') {
-            clickPower += upgrade.profitPerClick;
-        } else if (upgrade.type === 'passive') {
-            // Здесь можно добавить логику для пассивного дохода
-            console.log(`Пассивный доход увеличен на ${upgrade.profitPerHour}`);
-        } else if (upgrade.type === 'energy') {
-            maxEnergy += upgrade.energyIncrease;
-            energy = Math.min(energy, maxEnergy); // Не даем энергии превышать новый лимит
-        } else if (upgrade.type === 'regen') {
-            energyRegenSpeed += upgrade.regenIncrease;
-        }
-
-        saveGame();
-        updateUI();
-        renderUpgrades(); // Перерисовать экран прокачки
-        return true;
-    }
-    return false;
-}
-
-
-// --- ФУНКЦИИ ИНТЕРФЕЙСА ---
-function renderUpgrades() {
-    const container = document.getElementById('upgradeList');
-    container.innerHTML = ''; // Очистить перед рендером
-
-    upgrades.forEach(upgrade => {
-        const cost = getUpgradeCost(upgrade);
-        const canAfford = score >= cost;
-
-        const card = document.createElement('div');
-        card.className = 'upgrade-card';
-
-        card.innerHTML = `
-            <div class="upgrade-header">
-                <div class="upgrade-name">${upgrade.name}</div>
-                <div class="upgrade-level">Уровень: ${upgrade.level}</div>
-            </div>
-            <div class="upgrade-profit">${upgrade.description}</div>
-            <div class="upgrade-cost">Стоимость: ${cost.toLocaleString('ru-RU')}</div>
-            <button class="upgrade-btn" data-id="${upgrade.id}" ${!canAfford ? 'disabled' : ''}>
-                ${!canAfford ? 'Недостаточно голосов' : 'Улучшить'}
-            </button>
-        `;
-
-        container.appendChild(card);
-    });
-
-    // Добавить обработчики кликов для кнопок улучшений
-    document.querySelectorAll('#upgradeList .upgrade-btn').forEach(button => {
-        button.addEventListener('click', () => {
-            const upgradeId = button.getAttribute('data-id');
-            applyUpgrade(upgradeId);
-        });
-    });
-}
-
-
-// Загрузка сохраненного прогресса из памяти браузера (LocalStorage)
-function loadGame() {
-    const savedScore = localStorage.getItem('nl_tap_score');
-    const savedEnergy = localStorage.getItem('nl_tap_energy');
-    const savedUpgrades = localStorage.getItem('nl_tap_upgrades');
-
-    if (savedScore !== null) score = parseInt(savedScore, 10);
-    if (savedEnergy !== null) energy = parseInt(savedEnergy, 10);
-    if (savedUpgrades !== null) {
-        try {
-            const parsedUpgrades = JSON.parse(savedUpgrades);
-            // Объединить сохраненные уровни с базовыми данными улучшений
-            upgrades = upgrades.map(upg => {
-                const saved = parsedUpgrades.find(s => s.id === upg.id);
-                if (saved) {
-                    upg.level = saved.level;
-                    // Пересчитать статы на основе уровней
-                    if (upg.type === 'click') {
-                        for (let i = 0; i < upg.level; i++) {
-                            clickPower += upg.profitPerClick;
-                        }
-                    } else if (upg.type === 'energy') {
-                        for (let i = 0; i < upg.level; i++) {
-                            maxEnergy += upg.energyIncrease;
-                        }
-                        energy = Math.min(energy, maxEnergy);
-                    } else if (upg.type === 'regen') {
-                        for (let i = 0; i < upg.level; i++) {
-                            energyRegenSpeed += upg.regenIncrease;
-                        }
-                    }
-                }
-                return upg;
-            });
-        } catch (e) {
-            console.error("Ошибка загрузки улучшений:", e);
-        }
-    }
-}
-
-// Запись текущего прогресса в LocalStorage
-function saveGame() {
-    localStorage.setItem('nl_tap_score', score);
-    localStorage.setItem('nl_tap_energy', energy);
-    // Сохраняем только уровень улучшений
-    const upgradesToSave = upgrades.map(u => ({ id: u.id, level: u.level }));
-    localStorage.setItem('nl_tap_upgrades', JSON.stringify(upgradesToSave));
-}
-
-// Обновление элементов интерфейса на основе актуальных данных
-function updateUI() {
-    scoreEl.textContent = score.toLocaleString('ru-RU');
-    if (energyTextEl && energyFillEl) {
-        energyTextEl.textContent = `${energy} / ${maxEnergy}`;
-        const percentage = (energy / maxEnergy) * 100;
-        energyFillEl.style.width = `${percentage}%`;
-    }
-}
-
-// Функция обработки нажатия на кнопку-слона
-function handleTap(e) {
-    e.preventDefault(); // Защита от системного двойного тапа и масштабирования
-    if (energy >= clickPower) {
-        score += clickPower;
-        energy -= clickPower;
-        updateUI();
-        saveGame(); // Сохраняем состояние сразу после изменения баланса
-        let clientX, clientY;
-        if (e.touches && e.touches.length > 0) {
-            clientX = e.touches[e.touches.length - 1].clientX;
-            clientY = e.touches[e.touches.length - 1].clientY;
-        } else {
-            clientX = e.clientX;
-            clientY = e.clientY;
-        }
-        createPopUp(clientX, clientY);
-    }
-}
-
-// Создание анимированной вылетающей цифры (+1)
-function createPopUp(x, y) {
-    const pop = document.createElement('div');
-    pop.classList.add('tap-pop');
-    pop.textContent = `+${clickPower}`;
-    const rect = clickArea.getBoundingClientRect();
-    pop.style.left = `${x - rect.left - 15}px`;
-    pop.style.top = `${y - rect.top - 30}px`;
-    clickArea.appendChild(pop);
-    setTimeout(() => { pop.remove(); }, 600);
-}
-
-// Привязка событий клика и тача к главной кнопке
-if (slonBtn) {
-    slonBtn.addEventListener('touchstart', handleTap, { passive: false });
-    slonBtn.addEventListener('mousedown', handleTap);
-}
-
-// Таймер регенерации энергии (срабатывает раз в секунду)
-setInterval(() => {
-    if (energy < maxEnergy) {
-        energy = Math.min(maxEnergy, energy + energyRegenSpeed);
-        updateUI();
-        saveGame(); // Периодически фиксируем восстановленную энергию
-    }
-}, 1000);
-
-// --- ЛОГИКА НАВИГАЦИИ (ПЕРЕКЛЮЧЕНИЕ ЭКРАНОВ) ---
-const navItems = document.querySelectorAll('.nav-item');
-const screens = document.querySelectorAll('.screen');
-
-navItems.forEach(item => {
-    item.addEventListener('click', () => {
-        // Снимаем активный статус со всех пунктов меню
-        navItems.forEach(nav => nav.classList.remove('active'));
-        item.classList.add('active');
-
-        const targetScreenId = item.getAttribute('data-screen');
-
-        // Скрываем все разделы и отображаем выбранный пользователем
-        screens.forEach(screen => {
-            screen.classList.remove('active');
-            if (screen.id === targetScreenId) {
-                screen.classList.add('active');
-                 // Если переключаемся на экран прокачки, перерисовать его
-                 if (targetScreenId === 'screen-upgrade') {
-                     renderUpgrades();
-                 }
-            }
-        });
-    });
-});
-
-// Запуск инициализации при открытии игры
-loadGame();
-updateUI();
-
-</script>
+<script src="script.js"></script>
 </body>
 </html>
-```
