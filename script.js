@@ -1,99 +1,111 @@
-// --- ИГРОВАЯ ЛОГИКА ---
+// --- КОНФИГУРАЦИЯ ИГРЫ ---
 let score = 0;
 let energy = 1000;
 const maxEnergy = 1000;
-const clickPower = 1;
+let clickPower = 1;
+let profitPerHour = 0;
 const energyRegenSpeed = 3;
 
-// Награды по дням (можно менять суммы)
+// Ранги
+const ranks = [
+    { name: "Новичок", minScore: 0, icon: "👶" },
+    { name: "Активист", minScore: 500, icon: "🌱" },
+    { name: "Агитатор", minScore: 2500, icon: "📢" },
+    { name: "Организатор", minScore: 10000, icon: "🤝" },
+    { name: "Лидер ячейки", minScore: 50000, icon: "⭐" },
+    { name: "Политик", minScore: 150000, icon: "🏛️" },
+    { name: "Лидер движения", minScore: 1000000, icon: "🦁" }
+];
+
+// Улучшения
+const upgrades = [
+    { id: 'leaflets', name: 'Печать листовок', baseCost: 100, bonus: 100, icon: '📄', level: 0 },
+    { id: 'social', name: 'SMM-менеджер', baseCost: 500, bonus: 400, icon: '📱', level: 0 },
+    { id: 'meeting', name: 'Организация митинга', baseCost: 2000, bonus: 1500, icon: '🎤', level: 0 },
+    { id: 'office', name: 'Аренда штаба', baseCost: 5000, bonus: 3000, icon: '🏢', level: 0 },
+    { id: 'tv', name: 'Эфир на ТВ', baseCost: 15000, bonus: 8000, icon: '📺', level: 0 },
+];
+
+// Задания
+const tasks = [
+    { id: 'site', name: 'Официальный сайт', reward: 5000, icon: '🌐', link: 'https://novye.lyudi.ru/', type: 'link' },
+    { id: 'tg_channel', name: 'Telegram канал', reward: 10000, icon: '✈️', link: 'https://t.me/novieludy', type: 'sub' },
+    { id: 'vk_group', name: 'Группа ВКонтакте', reward: 7500, icon: '🔵', link: 'https://vk.com/novieludy', type: 'sub' },
+];
+
+// Награды по дням
 const dailyRewards = [500, 1000, 2500, 5000, 10000, 25000, 50000];
 
+// Элементы DOM
 const scoreEl = document.getElementById('score');
 const energyTextEl = document.getElementById('energyText');
 const energyFillEl = document.getElementById('energyFill');
 const clickArea = document.getElementById('clickArea');
 const slonBtn = document.getElementById('slonBtn');
-
-// Элементы модального окна
+const upgradesList = document.getElementById('upgradesList');
+const tasksList = document.getElementById('tasksList');
 const dailyModal = document.getElementById('dailyModal');
 const dayNumEl = document.getElementById('dayNum');
 const rewardAmountEl = document.getElementById('rewardAmount');
 const claimBtn = document.getElementById('claimBtn');
 
+// --- СИСТЕМА СОХРАНЕНИЯ ---
 function loadGame() {
-    const savedScore = localStorage.getItem('nl_tap_score');
-    const savedEnergy = localStorage.getItem('nl_tap_energy');
-    if (savedScore !== null) score = parseInt(savedScore, 10);
-    if (savedEnergy !== null) energy = parseInt(savedEnergy, 10);
+    const savedScore = localStorage.getItem('nl_score');
+    const savedEnergy = localStorage.getItem('nl_energy');
+    const savedProfit = localStorage.getItem('nl_profit');
+    const savedClickPower = localStorage.getItem('nl_clickPower');
+    const savedUpgrades = localStorage.getItem('nl_upgrades');
+    const completedTasks = JSON.parse(localStorage.getItem('nl_completed_tasks') || '[]');
+
+    if (savedScore) score = parseInt(savedScore);
+    if (savedEnergy) energy = parseInt(savedEnergy);
+    if (savedProfit) profitPerHour = parseInt(savedProfit);
+    if (savedClickPower) clickPower = parseInt(savedClickPower);
     
-    checkDailyBonus(); // Проверяем бонус при загрузке
+    if (savedUpgrades) {
+        const parsedUpgrades = JSON.parse(savedUpgrades);
+        parsedUpgrades.forEach((saved, index) => {
+            if (upgrades[index]) upgrades[index].level = saved.level;
+        });
+    }
+
+    tasks.forEach(task => {
+        if (completedTasks.includes(task.id)) task.completed = true;
+    });
 }
 
 function saveGame() {
-    localStorage.setItem('nl_tap_score', score);
-    localStorage.setItem('nl_tap_energy', energy);
+    localStorage.setItem('nl_score', score);
+    localStorage.setItem('nl_energy', energy);
+    localStorage.setItem('nl_profit', profitPerHour);
+    localStorage.setItem('nl_clickPower', clickPower);
+    localStorage.setItem('nl_upgrades', JSON.stringify(upgrades.map(u => ({ id: u.id, level: u.level }))));
+    const completedIds = tasks.filter(t => t.completed).map(t => t.id);
+    localStorage.setItem('nl_completed_tasks', JSON.stringify(completedIds));
 }
 
+// --- ОБНОВЛЕНИЕ ИНТЕРФЕЙСА ---
 function updateUI() {
-    scoreEl.textContent = score.toLocaleString('ru-RU');
+    scoreEl.textContent = Math.floor(score).toLocaleString('ru-RU');
+    
     if (energyTextEl && energyFillEl) {
-        energyTextEl.textContent = `${energy} / ${maxEnergy}`;
+        energyTextEl.textContent = `${Math.floor(energy)} / ${maxEnergy}`;
         const percentage = (energy / maxEnergy) * 100;
         energyFillEl.style.width = `${percentage}%`;
     }
+
+    renderUpgrades();
+    renderTasks();
 }
 
-// --- ЛОГИКА ЕЖЕДНЕВНОГО БОНУСА ---
-function checkDailyBonus() {
-    const lastClaim = localStorage.getItem('nl_last_claim');
-    const currentDay = new Date().toDateString(); // Получаем строку вида "Mon Jul 27 2026"
-    
-    // Если последний вход был не сегодня
-    if (lastClaim !== currentDay) {
-        let streak = parseInt(localStorage.getItem('nl_streak') || '0');
-        
-        // Если пропустили больше одного дня, сбрасываем серию на 0
-        if (lastClaim) {
-            const lastDate = new Date(lastClaim);
-            const today = new Date();
-            const diffTime = Math.abs(today - lastDate);
-            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
-            if (diffDays > 2) streak = 0; 
-        }
-
-        // Определяем номер дня (цикл из 7 дней)
-        const dayIndex = streak % dailyRewards.length;
-        const reward = dailyRewards[dayIndex];
-
-        // Показываем окно
-        dayNumEl.textContent = streak + 1;
-        rewardAmountEl.textContent = `+${reward}`;
-        dailyModal.classList.add('active');
-
-        // Обработка кнопки "Забрать"
-        claimBtn.onclick = () => {
-            score += reward;
-            streak++;
-            localStorage.setItem('nl_last_claim', currentDay);
-            localStorage.setItem('nl_streak', streak);
-            
-            dailyModal.classList.remove('active');
-            updateUI();
-            saveGame();
-            
-            // Вибрация при получении награды
-            if (window.navigator.vibrate) window.navigator.vibrate([50, 50, 50]);
-        };
-    }
-}
-
+// --- ЛОГИКА ТАПА ---
 function handleTap(e) {
     e.preventDefault();
     if (energy >= clickPower) {
         score += clickPower;
         energy -= clickPower;
         updateUI();
-        saveGame();
         
         let clientX, clientY;
         if (e.touches && e.touches.length > 0) {
@@ -104,6 +116,7 @@ function handleTap(e) {
             clientY = e.clientY;
         }
         createPopUp(clientX, clientY);
+        if (window.navigator.vibrate) window.navigator.vibrate(10);
     }
 }
 
@@ -118,20 +131,130 @@ function createPopUp(x, y) {
     setTimeout(() => { pop.remove(); }, 600);
 }
 
-if (slonBtn) {
-    slonBtn.addEventListener('touchstart', handleTap, { passive: false });
-    slonBtn.addEventListener('mousedown', handleTap);
+// --- СИСТЕМА УЛУЧШЕНИЙ ---
+function getUpgradeCost(upgrade) {
+    return Math.floor(upgrade.baseCost * Math.pow(1.15, upgrade.level));
 }
 
-setInterval(() => {
-    if (energy < maxEnergy) {
-        energy = Math.min(maxEnergy, energy + energyRegenSpeed);
-        updateUI();
+function buyUpgrade(index) {
+    const upgrade = upgrades[index];
+    const cost = getUpgradeCost(upgrade);
+    if (score >= cost) {
+        score -= cost;
+        upgrade.level++;
+        profitPerHour += upgrade.bonus;
+        clickPower += 1; 
         saveGame();
+        updateUI();
+        if (window.Telegram?.WebApp?.HapticFeedback) window.Telegram.WebApp.HapticFeedback.notificationOccurred('success');
     }
+}
+
+function renderUpgrades() {
+    if (!upgradesList) return;
+    upgradesList.innerHTML = '';
+    upgrades.forEach((upgrade, index) => {
+        const cost = getUpgradeCost(upgrade);
+        const canBuy = score >= cost;
+        const card = document.createElement('div');
+        card.className = `upgrade-card ${canBuy ? '' : 'disabled'}`;
+        card.onclick = () => { if (canBuy) buyUpgrade(index); };
+        card.innerHTML = `
+            <div class="upgrade-icon">${upgrade.icon}</div>
+            <div class="upgrade-info">
+                <div class="upgrade-name">${upgrade.name} <span style="font-size:10px; opacity:0.7">Ур. ${upgrade.level}</span></div>
+                <div class="upgrade-bonus">+${upgrade.bonus}/час</div>
+            </div>
+            <div class="upgrade-cost">${cost.toLocaleString('ru-RU')}</div>
+        `;
+        upgradesList.appendChild(card);
+    });
+}
+
+// --- ЛОГИКА ЗАДАНИЙ ---
+function startTask(task) {
+    if (task.completed) return;
+    window.open(task.link, '_blank');
+    const btn = document.getElementById(`btn-${task.id}`);
+    if (btn) {
+        btn.textContent = 'Проверка...';
+        btn.classList.add('checking');
+        setTimeout(() => {
+            task.completed = true;
+            score += task.reward;
+            saveGame();
+            updateUI();
+            if (window.navigator.vibrate) window.navigator.vibrate([50, 50, 50]);
+        }, 3000);
+    }
+}
+
+function renderTasks() {
+    if (!tasksList) return;
+    tasksList.innerHTML = '';
+    tasks.forEach(task => {
+        const card = document.createElement('div');
+        card.className = 'task-card';
+        let btnText = 'Выполнить';
+        let btnClass = '';
+        if (task.completed) {
+            btnText = 'Готово';
+            btnClass = 'completed';
+        }
+        card.innerHTML = `
+            <div class="task-info">
+                <span class="task-icon">${task.icon}</span>
+                <div>
+                    <div class="task-name">${task.name}</div>
+                    <div class="task-reward">+${task.reward} голосов</div>
+                </div>
+            </div>
+            <button id="btn-${task.id}" class="task-btn ${btnClass}" onclick='startTask(${JSON.stringify(task)})'>${btnText}</button>
+        `;
+        tasksList.appendChild(card);
+    });
+}
+
+// --- ЕЖЕДНЕВНЫЙ БОНУС ---
+function checkDailyBonus() {
+    const lastClaim = localStorage.getItem('nl_last_claim');
+    const currentDay = new Date().toDateString();
+    if (lastClaim !== currentDay) {
+        let streak = parseInt(localStorage.getItem('nl_streak') || '0');
+        if (lastClaim) {
+            const lastDate = new Date(lastClaim);
+            const today = new Date();
+            const diffTime = Math.abs(today - lastDate);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+            if (diffDays > 2) streak = 0; 
+        }
+        const dayIndex = streak % dailyRewards.length;
+        const reward = dailyRewards[dayIndex];
+        dayNumEl.textContent = streak + 1;
+        rewardAmountEl.textContent = `+${reward}`;
+        dailyModal.classList.add('active');
+        claimBtn.onclick = () => {
+            score += reward;
+            streak++;
+            localStorage.setItem('nl_last_claim', currentDay);
+            localStorage.setItem('nl_streak', streak);
+            dailyModal.classList.remove('active');
+            updateUI();
+            saveGame();
+            if (window.navigator.vibrate) window.navigator.vibrate([50, 50, 50]);
+        };
+    }
+}
+
+// --- ПАССИВНЫЙ ДОХОД И РЕГЕНЕРАЦИЯ ---
+setInterval(() => {
+    if (energy < maxEnergy) energy = Math.min(maxEnergy, energy + energyRegenSpeed);
+    if (profitPerHour > 0) score += profitPerHour / 3600;
+    updateUI();
+    saveGame();
 }, 1000);
 
-// Навигация
+// --- НАВИГАЦИЯ ---
 const navItems = document.querySelectorAll('.nav-item');
 const screens = document.querySelectorAll('.screen');
 navItems.forEach(item => {
@@ -146,5 +269,12 @@ navItems.forEach(item => {
     });
 });
 
+// --- ЗАПУСК ---
+if (slonBtn) {
+    slonBtn.addEventListener('touchstart', handleTap, { passive: false });
+    slonBtn.addEventListener('mousedown', handleTap);
+}
+
 loadGame();
+checkDailyBonus();
 updateUI();
