@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Тапай за Новых!</title>
+    <!-- Подключаем Telegram WebApp SDK для интеграции с мессенджером -->
+    <script src="https://telegram.org"></script>
     <style>
         body {
             background-color: #121212;
@@ -101,58 +103,94 @@
             line-height: 1.2;
         }
 
-        /* Экран прокачки */
-        #upgrade-screen {
+        /* Экран прокачки и Заданий */
+        #upgrade-screen, #tasks-screen {
             flex-direction: column;
             justify-content: flex-start;
             overflow-y: auto;
             padding: 10px 0;
             gap: 12px;
+            width: 100%;
         }
 
-        .card {
+        .card, .task-card {
             width: 90%;
             max-width: 350px;
             background-color: #1e1e1e;
             border-radius: 12px;
-            padding: 12px;
+            padding: 14px;
             display: flex;
             justify-content: space-between;
             align-items: center;
             border: 1px solid #2d2d2d;
+            box-sizing: border-box;
         }
 
-        .card-info {
+        .card-info, .task-info {
             display: flex;
             flex-direction: column;
             gap: 4px;
+            text-align: left;
         }
 
-        .card-name {
+        .card-name, .task-name {
             font-weight: bold;
-            font-size: 16px;
+            font-size: 15px;
         }
 
-        .card-profit {
+        .card-profit, .task-reward {
             font-size: 12px;
             color: #00b4d8;
         }
 
-        .card-cost {
+        .card-cost, .task-btn, .invite-btn {
             font-size: 13px;
             color: #e0e0e0;
             background-color: #2a2a2a;
-            padding: 6px 12px;
+            padding: 8px 14px;
             border-radius: 20px;
             border: none;
             cursor: pointer;
             font-weight: bold;
-            transition: background 0.2s;
+            transition: all 0.2s;
+            white-space: nowrap;
         }
 
-        .card-cost:hover {
+        .card-cost:hover, .task-btn:hover, .invite-btn:hover {
             background-color: #00b4d8;
             color: #fff;
+        }
+
+        .task-btn.done {
+            background-color: #2a6f43;
+            color: #fff;
+            cursor: default;
+        }
+
+        /* Блок рефералов */
+        .referral-section {
+            width: 90%;
+            max-width: 350px;
+            background: linear-gradient(135deg, #1e1e1e 0%, #15252d 100%);
+            border-radius: 12px;
+            padding: 14px;
+            box-sizing: border-box;
+            border: 1px solid #00b4d8;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .ref-title {
+            font-weight: bold;
+            font-size: 16px;
+            margin-bottom: 5px;
+            color: #00b4d8;
+        }
+
+        .ref-desc {
+            font-size: 12px;
+            color: #aaa;
+            margin-bottom: 12px;
         }
 
         /* Подвал */
@@ -238,7 +276,7 @@
 <body>
 
     <div class="header">
-        <div class="status" id="player-status">Уровень 4: Политлидер района</div>
+        <div class="status" id="player-status">Уровень 1: Сторонник партии</div>
         <div class="balance-container">
             <span id="balance-view">0</span>
             <span class="currency">ПО</span>
@@ -253,9 +291,20 @@
         </button>
     </div>
 
-    <!-- ЭКРАН ПРОКАЧКИ (МАГАЗИН) -->
-    <div class="screen" id="upgrade-screen">
-        <!-- Карточки будут создаваться автоматически через JavaScript -->
+    <!-- ЭКРАН ПРОКАЧКИ -->
+    <div class="screen" id="upgrade-screen"></div>
+
+    <!-- ЭКРАН ЗАДАНИЙ И РЕФЕРАЛОВ -->
+    <div class="screen" id="tasks-screen">
+        <!-- Блок приглашения друзей -->
+        <div class="referral-section">
+            <div class="ref-title">👥 Приведи друга</div>
+            <div class="ref-desc">Получай +15 000 ПО за каждого приглашенного сторонника!</div>
+            <button class="invite-btn" id="invite-trigger">🔗 Пригласить друга</button>
+            <div style="font-size: 11px; color: #00b4d8; margin-top: 8px;" id="friends-count">Приглашено друзей: 0</div>
+        </div>
+        <!-- Список квестов -->
+        <div id="tasks-list" style="width: 100%; display: flex; flex-direction: column; align-items: center; gap: 12px;"></div>
     </div>
 
     <div class="footer">
@@ -272,7 +321,7 @@
         <div class="menu">
             <button class="menu-item active" id="btn-main">🏠 Главная</button>
             <button class="menu-item" id="btn-upgrade">📈 Прокачка</button>
-            <button class="menu-item" style="opacity: 0.4; cursor: not-allowed;">🎯 Задания</button>
+            <button class="menu-item" id="btn-tasks">🎯 Задания</button>
             <button class="menu-item" style="opacity: 0.4; cursor: not-allowed;">🏆 Топ</button>
         </div>
     </div>
