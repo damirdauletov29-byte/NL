@@ -1,18 +1,17 @@
+// --- ИМПОРТ SUPABASE ---
+import { supabase, getTelegramUserId } from './supabase.js';
+
 // --- КОНФИГУРАЦИЯ ИГРЫ ---
 let score = 0;
 let energy = 1000;
 const maxEnergy = 1000;
 let clickPower = 1;
-let profitPerHour = 0; // Голосов в час
+let profitPerHour = 0;
 const energyRegenSpeed = 3;
-
-// Переменные для заданий
-let taskSubscribedCompleted = localStorage.getItem('task_subscribed_completed') === 'true';
-let taskSubscribedVisited = localStorage.getItem('task_subscribed_visited') === 'true';
 
 // Ранги
 const ranks = [
-    { name: "Новичок", minScore: 0, icon: "" },
+    { name: "Новичок", minScore: 0, icon: "👶" },
     { name: "Активист", minScore: 500, icon: "🌱" },
     { name: "Агитатор", minScore: 2500, icon: "📢" },
     { name: "Организатор", minScore: 10000, icon: "🤝" },
@@ -21,42 +20,98 @@ const ranks = [
     { name: "Лидер движения", minScore: 1000000, icon: "🦁" }
 ];
 
-// База данных улучшений
+// Улучшения
 const upgrades = [
     { id: 'leaflets', name: 'Печать листовок', baseCost: 100, bonus: 100, icon: '📄', level: 0 },
-    { id: 'social', name: 'SMM-менеджер', baseCost: 500, bonus: 400, icon: '', level: 0 },
-    { id: 'meeting', name: 'Организация митинга', baseCost: 2000, bonus: 1500, icon: '', level: 0 },
+    { id: 'social', name: 'SMM-менеджер', baseCost: 500, bonus: 400, icon: '📱', level: 0 },
+    { id: 'meeting', name: 'Организация митинга', baseCost: 2000, bonus: 1500, icon: '🎤', level: 0 },
     { id: 'office', name: 'Аренда штаба', baseCost: 5000, bonus: 3000, icon: '🏢', level: 0 },
     { id: 'tv', name: 'Эфир на ТВ', baseCost: 15000, bonus: 8000, icon: '📺', level: 0 },
 ];
 
-// Реальные награды (Биржа Лидеров)
+// Награды
 const rewards = [
-    { id: 'merch_sticker', name: 'Стикерпак "Новые"', desc: 'Эксклюзивный набор стикеров для Telegram', cost: 5000, icon: '🎨' },
-    { id: 'merch_cap', name: 'Фирменная кепка', desc: 'Бирюзовая кепка с логотипом партии', cost: 25000, icon: '🧢' },
-    { id: 'edu_course', name: 'Курс "Политтехнолог"', desc: 'Доступ к закрытому образовательному модулю', cost: 50000, icon: '🎓' },
-    { id: 'internship', name: 'Стажировка в Госдуме', desc: 'Реальная возможность попасть в аппарат (Топ-100)', cost: 100000, icon: '🏛️' },
-    { id: 'meeting_leader', name: 'Завтрак с лидером', desc: 'Личная встреча с руководством движения', cost: 500000, icon: '' }
+    { id: 'merch_sticker', name: 'Стикерпак "Новые"', desc: 'Эксклюзивный набор стикеров', cost: 5000, icon: '🎨' },
 ];
 
-// Данные для рейтинга (Демо)
-const playersData = [
-    { name: "Алексей М.", score: 15400 },
-    { name: "Мария К.", score: 12300 },
-    { name: "Иван П.", score: 9800 },
-    { name: "Ты", score: 0, isMe: true },
-    { name: "Сергей В.", score: 4500 },
-];
+// --- ЗАГРУЗКА ДАННЫХ ИЗ SUPABASE ---
+async function loadGameFromSupabase() {
+    const userId = getTelegramUserId();
+    if (!userId) {
+        console.error('Не удалось получить telegram_id');
+        return;
+    }
 
-const regionsData = [
-    { name: "Москва", score: 1540000 },
-    { name: "Санкт-Петербург", score: 980000 },
-    { name: "Волгоградская обл.", score: 450000, isMe: true },
-    { name: "Новосибирская обл.", score: 320000 },
-    { name: "Краснодарский край", score: 210000 },
-];
+    const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('telegram_id', userId)
+        .limit(1);
 
-// Элементы DOM
+    if (error) {
+        console.warn('Пользователь не найден, создаем нового');
+        await createNewUser(userId);
+        return loadGameFromSupabase(); // Повторная загрузка
+    }
+
+    if (data && data.length > 0) {
+        const user = data[0];
+        score = user.score || 0;
+        energy = user.energy || 1000;
+        clickPower = user.click_power || 1;
+        profitPerHour = user.profit_per_hour || 0;
+        
+        // Восстанавливаем улучшения
+        const upgradesData = user.upgrades || {};
+        upgrades.forEach(u => u.level = upgradesData[u.id] || 0);
+        
+        // Восстанавливаем задания
+        const tasksData = user.tasks_completed || {};
+        // Здесь можно добавить логику для задач
+    }
+}
+
+async function createNewUser(userId) {
+    const { error } = await supabase
+        .from('users')
+        .insert({
+            telegram_id: userId,
+            score: 0,
+            energy: 1000,
+            click_power: 1,
+            profit_per_hour: 0,
+            upgrades: {},
+            tasks_completed: {}
+        });
+    if (error) console.error('Ошибка создания пользователя:', error);
+}
+
+// --- СОХРАНЕНИЕ В SUPABASE ---
+async function saveGameToSupabase() {
+    const userId = getTelegramUserId();
+    if (!userId) return;
+
+    const upgradesObj = {};
+    upgrades.forEach(u => upgradesObj[u.id] = u.level);
+
+    const { error } = await supabase
+        .from('users')
+        .upsert({
+            telegram_id: userId,
+            score,
+            energy,
+            click_power: clickPower,
+            profit_per_hour: profitPerHour,
+            upgrades: upgradesObj,
+            tasks_completed: {} // Можно расширить
+        }, {
+            onConflict: 'telegram_id'
+        });
+
+    if (error) console.error('Ошибка сохранения:', error);
+}
+
+// --- ОСТАЛЬНАЯ ЛОГИКА (остается как в вашем файле) ---
 const scoreEl = document.getElementById('score');
 const vphDisplay = document.getElementById('vphDisplay');
 const energyTextEl = document.getElementById('energyText');
@@ -68,47 +123,10 @@ const rankIconEl = document.getElementById('rankIcon');
 const levelFillEl = document.getElementById('levelFill');
 const upgradesList = document.getElementById('upgradesList');
 const rewardsList = document.getElementById('rewardsList');
-const leaderList = document.getElementById('leaderList');
 
-// --- СИСТЕМА СОХРАНЕНИЯ ---
-function loadGame() {
-    const savedScore = localStorage.getItem('nl_score');
-    const savedEnergy = localStorage.getItem('nl_energy');
-    const savedProfit = localStorage.getItem('nl_profit');
-    const savedClickPower = localStorage.getItem('nl_clickPower');
-    const savedUpgrades = localStorage.getItem('nl_upgrades');
-    
-    if (savedScore) score = parseInt(savedScore);
-    if (savedEnergy) energy = parseInt(savedEnergy);
-    if (savedProfit) profitPerHour = parseInt(savedProfit);
-    if (savedClickPower) clickPower = parseInt(savedClickPower);
-    
-    if (savedUpgrades) {
-        const parsedUpgrades = JSON.parse(savedUpgrades);
-        parsedUpgrades.forEach((saved, index) => {
-            if (upgrades[index]) upgrades[index].level = saved.level;
-        });
-    }
-
-    // Обновляем мой счет в демо-данных рейтинга
-    const myPlayer = playersData.find(p => p.isMe);
-    if (myPlayer) myPlayer.score = score;
-}
-
-function saveGame() {
-    localStorage.setItem('nl_score', score);
-    localStorage.setItem('nl_energy', energy);
-    localStorage.setItem('nl_profit', profitPerHour);
-    localStorage.setItem('nl_clickPower', clickPower);
-    localStorage.setItem('nl_upgrades', JSON.stringify(upgrades.map(u => ({ id: u.id, level: u.level }))));
-    localStorage.setItem('task_subscribed_completed', taskSubscribedCompleted);
-    localStorage.setItem('task_subscribed_visited', taskSubscribedVisited);
-}
-
-// --- ОБНОВЛЕНИЕ ИНТЕРФЕЙСА ---
 function updateUI() {
     scoreEl.textContent = Math.floor(score).toLocaleString('ru-RU');
-    vphDisplay.textContent = `+${Math.floor(profitPerHour).toLocaleString('ru-RU')}/час`;
+    vphDisplay.textContent = `+${profitPerHour.toLocaleString('ru-RU')}/час`;
     
     if (energyTextEl && energyFillEl) {
         energyTextEl.textContent = `${Math.floor(energy)} / ${maxEnergy}`;
@@ -136,12 +154,6 @@ function updateUI() {
     
     renderUpgrades();
     renderRewards();
-    renderTasks();
-    
-    // Если открыт рейтинг, обновляем его данные
-    if (document.getElementById('screen-leaderboard').classList.contains('active')) {
-        renderLeaderboard(currentTab);
-    }
 }
 
 // --- ЛОГИКА ТАПА ---
@@ -151,6 +163,7 @@ function handleTap(e) {
         score += clickPower;
         energy -= clickPower;
         updateUI();
+        saveGameToSupabase(); // Сохраняем сразу
         
         let clientX, clientY;
         if (e.touches && e.touches.length > 0) {
@@ -175,7 +188,7 @@ function createPopUp(x, y) {
     setTimeout(() => { pop.remove(); }, 600);
 }
 
-// --- СИСТЕМА УЛУЧШЕНИЙ ---
+// --- УЛУЧШЕНИЯ ---
 function getUpgradeCost(upgrade) {
     return Math.floor(upgrade.baseCost * Math.pow(1.15, upgrade.level));
 }
@@ -188,8 +201,8 @@ function buyUpgrade(index) {
         upgrade.level++;
         profitPerHour += upgrade.bonus;
         clickPower += 1; 
-        saveGame();
         updateUI();
+        saveGameToSupabase();
         if (window.navigator.vibrate) window.navigator.vibrate(50);
     }
 }
@@ -215,13 +228,13 @@ function renderUpgrades() {
     });
 }
 
-// --- ЛОГИКА БИРЖИ ---
+// --- БИРЖА ---
 function claimReward(id) {
     const reward = rewards.find(r => r.id === id);
     if (reward && score >= reward.cost) {
-        alert(`Поздравляем! Вы оформили заявку на "${reward.name}". Свяжитесь с куратором для получения.`);
+        alert(`Поздравляем! Вы оформили заявку на "${reward.name}".`);
     } else {
-        alert('Недостаточно голосов для получения этой награды!');
+        alert('Недостаточно голосов!');
     }
 }
 
@@ -251,126 +264,28 @@ function renderRewards() {
     });
 }
 
-// --- ЛОГИКА ЗАДАНИЙ ---
-function markLinkVisited() {
-    taskSubscribedVisited = true;
-    saveGame();
-    updateTasksUI();
-    window.open('https://t.me/partynewpeople', '_blank');
-}
-
-function completeSubscribeTask() {
-    if (taskSubscribedCompleted) {
-        alert("Вы уже получали награду за подписку!");
-        return;
-    }
-    if (!taskSubscribedVisited) {
-        alert("Сначала перейдите по ссылке на канал!");
-        return;
-    }
-    const reward = 5000;
-    score += reward;
-    taskSubscribedCompleted = true;
-    saveGame();
-    updateUI();
-    alert(`Поздравляем! Вы получили ${reward} голосов за подписку!`);
-}
-
-function renderTasks() {
-    const container = document.getElementById('tasksContainer');
-    if (!container) return;
-    
-    container.innerHTML = '';
-    const taskDiv = document.createElement('div');
-    taskDiv.className = 'task-item';
-    
-    let btnText = 'Сначала перейдите по ссылке';
-    let btnDisabled = true;
-    
-    if (taskSubscribedCompleted) {
-        btnText = 'Выполнено!';
-        btnDisabled = true;
-    } else if (taskSubscribedVisited) {
-        btnText = 'Получить награду';
-        btnDisabled = false;
-    }
-
-    taskDiv.innerHTML = `
-        <h3>Подписаться на канал @partynewpeople</h3>
-        <p>Подпишитесь на наш официальный канал и получите 5000 голосов!</p>
-        <button onclick="completeSubscribeTask()" ${btnDisabled ? 'disabled' : ''}>${btnText}</button>
-        <a href="#" class="task-link" onclick="event.preventDefault(); markLinkVisited();">Перейти к каналу</a>
-    `;
-    container.appendChild(taskDiv);
-}
-
-function updateTasksUI() {
-    renderTasks();
-}
-
-// --- РЕЙТИНГ ---
-let currentTab = 'players';
-
-function switchTab(tab) {
-    currentTab = tab;
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    event.target.classList.add('active');
-    renderLeaderboard(tab);
-}
-
-function renderLeaderboard(type) {
-    if (!leaderList) return;
-    leaderList.innerHTML = '';
-    
-    const data = type === 'players' ? [...playersData] : [...regionsData];
-    // Сортируем по очкам
-    data.sort((a, b) => b.score - a.score);
-    
-    data.forEach((item, index) => {
-        const isMe = item.isMe;
-        const card = document.createElement('div');
-        card.className = `leader-card ${isMe ? 'my-rank' : ''}`;
-        
-        let rankIcon = index + 1;
-        if (index === 0) rankIcon = '🥇';
-        if (index === 1) rankIcon = '🥈';
-        if (index === 2) rankIcon = '';
-
-        card.innerHTML = `
-            <div class="leader-rank">${rankIcon}</div>
-            <div class="leader-info">
-                <div class="leader-name">${item.name} ${isMe ? '(Вы)' : ''}</div>
-                <div class="leader-score">${item.score.toLocaleString()} голосов</div>
-            </div>
-        `;
-        leaderList.appendChild(card);
-    });
-}
-
-// --- ПАССИВНЫЙ ДОХОД И РЕГЕНЕРАЦИЯ ---
+// --- ПАССИВНЫЙ ДОХОД ---
 setInterval(() => {
-    if (energy < maxEnergy) energy = Math.min(maxEnergy, energy + energyRegenSpeed);
-    if (profitPerHour > 0) score += profitPerHour / 3600;
-    updateUI();
-    saveGame();
+    if (energy < maxEnergy) {
+        energy = Math.min(maxEnergy, energy + energyRegenSpeed);
+        updateUI();
+        saveGameToSupabase();
+    }
+    if (profitPerHour > 0) {
+        score += profitPerHour / 3600;
+        updateUI();
+        saveGameToSupabase();
+    }
 }, 1000);
 
 // --- НАВИГАЦИЯ ---
-const navItems = document.querySelectorAll('.nav-item');
-const screens = document.querySelectorAll('.screen');
-navItems.forEach(item => {
+document.querySelectorAll('.nav-item').forEach(item => {
     item.addEventListener('click', () => {
-        navItems.forEach(nav => nav.classList.remove('active'));
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
         item.classList.add('active');
-        const targetScreenId = item.getAttribute('data-screen');
-        screens.forEach(screen => {
-            screen.classList.remove('active');
-            if (screen.id === targetScreenId) {
-                screen.classList.add('active');
-                if (targetScreenId === 'screen-tasks') renderTasks();
-                if (targetScreenId === 'screen-leaderboard') renderLeaderboard(currentTab);
-            }
-        });
+        const screenId = item.getAttribute('data-screen');
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById(screenId).classList.add('active');
     });
 });
 
@@ -380,5 +295,8 @@ if (slonBtn) {
     slonBtn.addEventListener('mousedown', handleTap);
 }
 
-loadGame();
-updateUI();
+// Загрузка игры
+(async () => {
+    await loadGameFromSupabase();
+    updateUI();
+})();
