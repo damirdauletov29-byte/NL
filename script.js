@@ -5,8 +5,9 @@ const maxEnergy = 1000;
 let clickPower = 1;
 let profitPerHour = 0; // Голосов в час
 const energyRegenSpeed = 3;
-// --- НОВАЯ ПЕРЕМЕННАЯ ДЛЯ ЗАДАНИЯ ПОДПИСКИ ---
+// --- НОВЫЕ ПЕРЕМЕННЫЕ ДЛЯ ЗАДАНИЯ ПОДПИСКИ ---
 let taskSubscribedCompleted = localStorage.getItem('task_subscribed_completed') === 'true';
+let taskSubscribedVisited = localStorage.getItem('task_subscribed_visited') === 'true';
 
 // Ранги
 const ranks = [
@@ -16,7 +17,7 @@ const ranks = [
 { name: "Организатор", minScore: 10000, icon: "🤝" },
 { name: "Лидер ячейки", minScore: 50000, icon: "⭐" },
 { name: "Политик", minScore: 150000, icon: "🏛️" },
-{ name: "Лидер движения", minScore: 1000000, icon: "🦁" }
+{ name: "Лидер движения", minScore: 1000000, icon: "狮子" }
 ];
 // База данных улучшений
 const upgrades = [
@@ -42,8 +43,9 @@ const savedEnergy = localStorage.getItem('nl_energy');
 const savedProfit = localStorage.getItem('nl_profit');
 const savedClickPower = localStorage.getItem('nl_clickPower');
 const savedUpgrades = localStorage.getItem('nl_upgrades');
-// --- ЗАГРУЗКА СТАТУСА ЗАДАНИЯ ---
-const savedTaskStatus = localStorage.getItem('task_subscribed_completed');
+// --- ЗАГРУЗКА СТАТУСОВ ЗАДАНИЯ ---
+const savedTaskStatusCompleted = localStorage.getItem('task_subscribed_completed');
+const savedTaskStatusVisited = localStorage.getItem('task_subscribed_visited');
 if (savedScore) score = parseInt(savedScore);
 if (savedEnergy) energy = parseInt(savedEnergy);
 if (savedProfit) profitPerHour = parseInt(savedProfit);
@@ -54,7 +56,8 @@ parsedUpgrades.forEach((saved, index) => {
 if (upgrades[index]) upgrades[index].level = saved.level;
 });
 }
-if (savedTaskStatus) taskSubscribedCompleted = savedTaskStatus === 'true';
+if (savedTaskStatusCompleted) taskSubscribedCompleted = savedTaskStatusCompleted === 'true';
+if (savedTaskStatusVisited) taskSubscribedVisited = savedTaskStatusVisited === 'true';
 }
 function saveGame() {
 localStorage.setItem('nl_score', score);
@@ -62,8 +65,9 @@ localStorage.setItem('nl_energy', energy);
 localStorage.setItem('nl_profit', profitPerHour);
 localStorage.setItem('nl_clickPower', clickPower);
 localStorage.setItem('nl_upgrades', JSON.stringify(upgrades.map(u => ({ id: u.id, level: u.level }))));
-// --- СОХРАНЕНИЕ СТАТУСА ЗАДАНИЯ ---
+// --- СОХРАНЕНИЕ СТАТУСОВ ЗАДАНИЯ ---
 localStorage.setItem('task_subscribed_completed', taskSubscribedCompleted);
+localStorage.setItem('task_subscribed_visited', taskSubscribedVisited);
 }
 
 // Элементы DOM
@@ -212,9 +216,21 @@ rewardsList.appendChild(card);
 
 // --- ЛОГИКА ЗАДАНИЙ (TASKS) ---
 
+function markLinkVisited() {
+    taskSubscribedVisited = true;
+    saveGame();
+    updateTasksUI(); // Обновить состояние кнопки
+    // Открываем ссылку в новой вкладке/окне
+    window.open('https://t.me/partynewpeople', '_blank');
+}
+
 function completeSubscribeTask() {
     if (taskSubscribedCompleted) {
         alert("Вы уже получали награду за подписку!");
+        return;
+    }
+    if (!taskSubscribedVisited) {
+        alert("Сначала перейдите по ссылке на канал!");
         return;
     }
     // Предполагаем, что награда составляет 5000 голосов
@@ -239,12 +255,12 @@ function renderTasks() {
     taskDiv.className = 'task-item'; // Добавьте класс для стилизации, если нужно
     taskDiv.innerHTML = `
         <h3>Подписаться на канал @partynewpeople</h3>
-        <p>Подпишитесь на наш официальный канал и получите награду! (На доверии)</p>
+        <p>Подпишитесь на наш официальный канал и получите награду!</p>
         <p>Награда: 5000 голосов</p>
-        <button onclick="completeSubscribeTask()" ${taskSubscribedCompleted ? 'disabled' : ''}>
-            ${taskSubscribedCompleted ? 'Выполнено!' : 'Получить награду'}
+        <button onclick="completeSubscribeTask()" ${taskSubscribedCompleted || (!taskSubscribedVisited && taskSubscribedCompleted) ? 'disabled' : ''}>
+            ${taskSubscribedCompleted ? 'Выполнено!' : (taskSubscribedVisited ? 'Получить награду' : 'Сначала перейдите по ссылке')}
         </button>
-        <a href="https://t.me/partynewpeople" target="_blank">Перейти к каналу</a>
+        <a href="#" onclick="event.preventDefault(); markLinkVisited();">Перейти к каналу</a>
     `;
     tasksContainer.appendChild(taskDiv);
 
@@ -254,9 +270,21 @@ function renderTasks() {
 // Функция для обновления UI заданий (например, кнопки)
 function updateTasksUI() {
     const taskButton = document.querySelector('#screen-tasks button');
+    const taskLink = document.querySelector('#screen-tasks a');
     if (taskButton) {
-        taskButton.disabled = taskSubscribedCompleted;
-        taskButton.textContent = taskSubscribedCompleted ? 'Выполнено!' : 'Получить награду';
+        // Кнопка неактивна, если задание выполнено ИЛИ если ссылка не посещена, но задание не выполнено
+        taskButton.disabled = taskSubscribedCompleted || (!taskSubscribedVisited && !taskSubscribedCompleted);
+        if (taskSubscribedCompleted) {
+            taskButton.textContent = 'Выполнено!';
+        } else if (taskSubscribedVisited) {
+            taskButton.textContent = 'Получить награду';
+        } else {
+            taskButton.textContent = 'Сначала перейдите по ссылке';
+        }
+    }
+    // Ссылка не требует обновления в данном случае, но можно добавить стили, если посещена
+    if (taskLink) {
+        // taskLink.style.opacity = taskSubscribedVisited ? '0.7' : '1'; // Пример стилизации
     }
 }
 
