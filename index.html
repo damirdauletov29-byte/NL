@@ -47,22 +47,6 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helve
 .upgrade-bonus { font-size: 12px; color: #00cbd6; }
 .upgrade-cost { background: #00cbd6; color: #0d1b1e; padding: 6px 12px; border-radius: 8px; font-weight: bold; font-size: 13px; min-width: 70px; text-align: center; }
 .upgrade-card.disabled { opacity: 0.5; filter: grayscale(1); }
-/* ЗАДАНИЯ */
-.tasks-list { width: 100%; max-width: 400px; display: flex; flex-direction: column; gap: 12px; padding-bottom: 20px; }
-.task-card { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(0, 203, 214, 0.1); border-radius: 15px; padding: 15px; display: flex; flex-direction: column; gap: 10px; }
-.task-header { display: flex; align-items: center; gap: 12px; }
-.task-icon { font-size: 28px; }
-.task-info { flex: 1; }
-.task-name { font-weight: bold; font-size: 16px; margin-bottom: 4px; }
-.task-desc { font-size: 13px; opacity: 0.8; line-height: 1.3; }
-.task-reward { font-size: 14px; font-weight: bold; color: #00ffcc; }
-.task-btn { background: #00cbd6; color: #0d1b1e; border: none; padding: 8px 16px; border-radius: 8px; font-weight: bold; font-size: 13px; cursor: pointer; width: 100%; }
-.task-btn:disabled { background: #555; color: #aaa; }
-/* Поле ввода промокода */
-.promo-section { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(0, 203, 214, 0.1); border-radius: 15px; padding: 15px; width: 100%; max-width: 400px; }
-.promo-input { width: 100%; padding: 12px; background: rgba(0,0,0,0.3); border: 1px solid rgba(0,203,214,0.3); border-radius: 8px; color: #fff; font-size: 16px; margin-bottom: 10px; }
-.promo-btn { background: #00cbd6; color: #0d1b1e; border: none; padding: 10px 15px; border-radius: 8px; font-weight: bold; font-size: 14px; cursor: pointer; width: 100%; }
-.promo-message { min-height: 20px; font-size: 13px; margin-top: 5px; text-align: center; }
 /* БИРЖА ЛИДЕРОВ */
 .rewards-list { width: 100%; max-width: 400px; display: flex; flex-direction: column; gap: 15px; padding-bottom: 20px; }
 .reward-card { background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(0, 203, 214, 0.2); border-radius: 18px; padding: 15px; display: flex; flex-direction: column; gap: 10px; position: relative; overflow: hidden; }
@@ -75,6 +59,14 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helve
 .reward-cost { font-size: 14px; font-weight: bold; color: #00ffcc; }
 .claim-reward-btn { background: #00cbd6; color: #0d1b1e; border: none; padding: 8px 16px; border-radius: 8px; font-weight: bold; font-size: 12px; cursor: pointer; }
 .claim-reward-btn:disabled { background: #555; color: #aaa; cursor: not-allowed; }
+
+/* Стили для заданий */
+.task-item { background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(0, 203, 214, 0.2); border-radius: 18px; padding: 15px; display: flex; flex-direction: column; gap: 10px; }
+.task-item h3 { font-size: 16px; font-weight: bold; color: #00ffcc; }
+.task-item p { font-size: 13px; opacity: 0.8; line-height: 1.4; }
+.task-item button { background: #00cbd6; color: #0d1b1e; border: none; padding: 8px 16px; border-radius: 8px; font-weight: bold; font-size: 12px; cursor: pointer; }
+.task-item button:disabled { background: #555; color: #aaa; cursor: not-allowed; }
+.task-item a { display: inline-block; margin-top: 10px; color: #00cbd6; text-decoration: underline; font-size: 13px; }
 </style>
 </head>
 <body>
@@ -117,40 +109,9 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helve
 </div>
 <!-- ЭКРАН 3: ЗАДАНИЯ -->
 <div class="screen" id="screen-tasks">
-<h2 style="margin-bottom: 15px; color: #00cbd6; width: 100%;">💼 Поручения</h2>
-<p style="font-size: 13px; opacity: 0.7; margin-bottom: 15px; width: 100%;">Выполняй задания и получай бонусные голоса!</p>
-
-<div class="tasks-list">
-<div class="task-card">
-<div class="task-header">
-<div class="task-icon">✈️</div>
-<div class="task-info">
-<div class="task-name">Подписка на Telegram</div>
-<div class="task-desc">Подпишись на официальный канал партии "Новые люди"</div>
-</div>
-</div>
-<div class="task-reward">+5000 голосов</div>
-<button class="task-btn" onclick="handleTask('tg_sub')">Перейти</button>
-</div>
-
-<div class="task-card">
-<div class="task-header">
-<div class="task-icon">🔵</div>
-<div class="task-info">
-<div class="task-name">Пост в ВКонтакте</div>
-<div class="task-desc">Выложи пост с хэштегом #новыелюди и введи промокод</div>
-</div>
-</div>
-<div class="task-reward">+10000 голосов</div>
-<button class="task-btn" onclick="handleTask('vk_post')">Инструкция</button>
-</div>
-</div>
-
-<div class="promo-section">
-<h3 style="margin-bottom: 10px; color: #00cbd6;">🎟️ Активировать промокод</h3>
-<input type="text" class="promo-input" id="promoInput" placeholder="Введите промокод">
-<button class="promo-btn" onclick="checkPromo()">Активировать</button>
-<div class="promo-message" id="promoMessage"></div>
+<div class="placeholder-content">
+    <h2>💼 Поручения</h2>
+    <!-- Список заданий будет добавлен сюда script.js -->
 </div>
 </div>
 <!-- ЭКРАН 4: БИРЖА ЛИДЕРОВ -->
