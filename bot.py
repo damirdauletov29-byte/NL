@@ -5,7 +5,7 @@ import requests
 BOT_TOKEN = "8777432434:AAF1TsPGRQ9Dafs3Q9hrI9MaThjW6TF0ByI"
 # ⚠️ Вставьте сюда ваш личный Telegram ID (чтобы бот пересылал ссылки вам)
 # Узнать свой ID можно у бота @userinfobot
-ADMIN_CHAT_ID = @dbfbei 
+ADMIN_CHAT_ID = dbfbei 
 
 bot = telebot.TeleBot(BOT_TOKEN)
 
