@@ -3,7 +3,8 @@ let score = 0;
 let energy = 1000;
 const maxEnergy = 1000;
 let clickPower = 1;
-let profitPerHour = 0; // Голосов в час
+let profitPerHour = 0; // Голосов в ча
+let taskSubscribedCompleted = localStorage.getItem('task_subscribed_completed') === 'true';
 const energyRegenSpeed = 3;
 // Список использованных промокодов (хранится в localStorage)
 let usedPromos = [];
