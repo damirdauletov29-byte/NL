@@ -5,8 +5,8 @@ import random
 import string
 
 # ⚠️ ВАШИ ДАННЫЕ
-BOT_TOKEN = "ВАШ_ТОКЕН_ОТ_BOTFATHER"
-ADMIN_CHAT_ID = 123456789  # Ваш Telegram ID
+BOT_TOKEN = "8777432434:AAF1TsPGRQ9Dafs3Q9hrI9MaThjW6TF0ByI"
+ADMIN_CHAT_ID = dbfbei  # Ваш Telegram ID
 REWARD_AMOUNT = 10000
 
 bot = telebot.TeleBot(BOT_TOKEN)
