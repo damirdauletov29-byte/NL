@@ -1,11 +1,18 @@
+// --- SUPABASE CONFIGURATION ---
+// ⚠️ ЗАМЕНИТЕ НА СВОИ ДАННЫЕ ИЗ SUPABASE DASHBOARD!
+const SUPABASE_URL = 'https://ВАШ_ПРОЕКТ.supabase.co';
+const SUPABASE_ANON_KEY = 'ВАШ_ANON_KEY';
+
+const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
 // --- КОНФИГУРАЦИЯ ИГРЫ ---
 let score = 0;
 let energy = 1000;
 const maxEnergy = 1000;
 let clickPower = 1;
-let profitPerHour = 0; // Голосов в час
+let profitPerHour = 0;
 const energyRegenSpeed = 3;
-// Ранги
+
 const ranks = [
 { name: "Новичок", minScore: 0, icon: "👶" },
 { name: "Активист", minScore: 500, icon: "🌱" },
@@ -15,7 +22,7 @@ const ranks = [
 { name: "Политик", minScore: 150000, icon: "🏛️" },
 { name: "Лидер движения", minScore: 1000000, icon: "🦁" }
 ];
-// База данных улучшений
+
 const upgrades = [
 { id: 'leaflets', name: 'Печать листовок', baseCost: 100, bonus: 100, icon: '📄', level: 0 },
 { id: 'social', name: 'SMM-менеджер', baseCost: 500, bonus: 400, icon: '📱', level: 0 },
@@ -23,7 +30,7 @@ const upgrades = [
 { id: 'office', name: 'Аренда штаба', baseCost: 5000, bonus: 3000, icon: '🏢', level: 0 },
 { id: 'tv', name: 'Эфир на ТВ', baseCost: 15000, bonus: 8000, icon: '📺', level: 0 },
 ];
-// Реальные награды (Биржа Лидеров)
+
 const rewards = [
 { id: 'merch_sticker', name: 'Стикерпак "Новые"', desc: 'Эксклюзивный набор стикеров для Telegram', cost: 5000, icon: '🎨' },
 { id: 'merch_cap', name: 'Фирменная кепка', desc: 'Бирюзовая кепка с логотипом партии', cost: 25000, icon: '🧢' },
@@ -32,41 +39,8 @@ const rewards = [
 { id: 'meeting_leader', name: 'Завтрак с лидером', desc: 'Личная встреча с руководством движения', cost: 500000, icon: '🤝' }
 ];
 
-// --- SUPABASE CONFIGURATION ---
-// ⚠️ ВАЖНО: ЗАМЕНИТЕ НА СВОИ ДАННЫЕ ИЗ SUPABASE DASHBOARD!
-const SUPABASE_URL = 'https://jagngvfawkrglnxuojtq.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImphZ25ndmZhd2tyZ2xueHVvanRxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU0MzM2MjksImV4cCI6MjEwMTAwOTYyOX0.V42tNuNn1NI6mGMgKRqk3M9gi33dC3IUpDe1M1ORYeM';
-const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
 // --- TELEGRAM USER DATA ---
 let telegramId = null;
-
-// --- СИСТЕМА СОХРАНЕНИЯ (локальное хранилище как резерв) ---
-function loadGame() {
-const savedScore = localStorage.getItem('nl_score');
-const savedEnergy = localStorage.getItem('nl_energy');
-const savedProfit = localStorage.getItem('nl_profit');
-const savedClickPower = localStorage.getItem('nl_clickPower');
-const savedUpgrades = localStorage.getItem('nl_upgrades');
-if (savedScore) score = parseInt(savedScore);
-if (savedEnergy) energy = parseInt(savedEnergy);
-if (savedProfit) profitPerHour = parseInt(savedProfit);
-if (savedClickPower) clickPower = parseInt(savedClickPower);
-if (savedUpgrades) {
-const parsedUpgrades = JSON.parse(savedUpgrades);
-parsedUpgrades.forEach((saved, index) => {
-if (upgrades[index]) upgrades[index].level = saved.level;
-});
-}
-}
-
-function saveGame() {
-localStorage.setItem('nl_score', score);
-localStorage.setItem('nl_energy', energy);
-localStorage.setItem('nl_profit', profitPerHour);
-localStorage.setItem('nl_clickPower', clickPower);
-localStorage.setItem('nl_upgrades', JSON.stringify(upgrades.map(u => ({ id: u.id, level: u.level }))));
-}
 
 // --- ЗАГРУЗКА/СОЗДАНИЕ ПОЛЬЗОВАТЕЛЯ ИЗ SUPABASE ---
 async function loadUserFromSupabase(tgId) {
@@ -137,52 +111,6 @@ const { error } = await supabase
 if (error) console.error('Ошибка сохранения в Supabase:', error);
 }
 
-// --- ЗАГРУЗКА РЕЙТИНГА ---
-async function loadLeaderboard() {
-const { data, error } = await supabase
-.from('users')
-.select('telegram_id, score')
-.order('score', { ascending: false })
-.limit(100);
-
-if (error) {
-console.error('Ошибка загрузки рейтинга:', error);
-document.getElementById('leaderboardList').innerHTML = '<p>Ошибка загрузки рейтинга</p>';
-return;
-}
-
-renderLeaderboard(data);
-}
-
-function renderLeaderboard(data) {
-const container = document.getElementById('leaderboardList');
-container.innerHTML = '';
-
-data.forEach((user, index) => {
-const card = document.createElement('div');
-card.className = 'reward-card';
-card.innerHTML = `
-<div class="reward-header">
-<span class="reward-icon">${getRankEmoji(index + 1)}</span>
-<div>
-<div class="reward-title">#${index + 1} ${user.telegram_id}</div>
-<div class="reward-desc">${user.score.toLocaleString('ru-RU')} голосов</div>
-</div>
-</div>
-`;
-container.appendChild(card);
-});
-}
-
-function getRankEmoji(position) {
-switch (position) {
-case 1: return "🥇";
-case 2: return "🥈";
-case 3: return "🥉";
-default: return "👤";
-}
-}
-
 // --- ОБНОВЛЕНИЕ ИНТЕРФЕЙСА ---
 function updateUI() {
 scoreEl.textContent = Math.floor(score).toLocaleString('ru-RU');
@@ -192,7 +120,6 @@ energyTextEl.textContent = `${Math.floor(energy)} / ${maxEnergy}`;
 const percentage = (energy / maxEnergy) * 100;
 energyFillEl.style.width = `${percentage}%`;
 }
-// Обновление ранга
 let currentRankIndex = 0;
 for (let i = 0; i < ranks.length; i++) {
 if (score >= ranks[i].minScore) currentRankIndex = i;
@@ -219,7 +146,6 @@ if (energy >= clickPower) {
 score += clickPower;
 energy -= clickPower;
 updateUI();
-// Сохраняем в Supabase при каждом тапе
 if (telegramId) saveGameToSupabase(telegramId);
 let clientX, clientY;
 if (e.touches && e.touches.length > 0) {
@@ -257,8 +183,7 @@ score -= cost;
 upgrade.level++;
 profitPerHour += upgrade.bonus;
 clickPower += 1;
-saveGame();
-if (telegramId) saveGameToSupabase(telegramId); // Сохраняем в Supabase
+if (telegramId) saveGameToSupabase(telegramId);
 updateUI();
 if (window.navigator.vibrate) window.navigator.vibrate(50);
 }
@@ -336,7 +261,6 @@ const rewardsList = document.getElementById('rewardsList');
 
 // --- ИНИЦИАЛИЗАЦИЯ ---
 async function initGame() {
-// Получаем ID пользователя Telegram
 const tg = window.Telegram?.WebApp;
 if (!tg) {
 alert("Запускайте через Telegram!");
@@ -350,13 +274,7 @@ return;
 }
 telegramId = user.id;
 
-// Загружаем/создаём пользователя в Supabase
 await loadUserFromSupabase(telegramId);
-
-// Загружаем локальные данные (резерв)
-loadGame();
-
-// Обновляем интерфейс
 updateUI();
 }
 
@@ -365,8 +283,7 @@ setInterval(() => {
 if (energy < maxEnergy) energy = Math.min(maxEnergy, energy + energyRegenSpeed);
 if (profitPerHour > 0) score += profitPerHour / 3600;
 updateUI();
-saveGame();
-if (telegramId) saveGameToSupabase(telegramId); // Сохраняем в Supabase
+if (telegramId) saveGameToSupabase(telegramId);
 }, 1000);
 
 // --- НАВИГАЦИЯ ---
@@ -375,15 +292,9 @@ const screens = document.querySelectorAll('.screen');
 
 navItems.forEach(item => {
 item.addEventListener('click', () => {
-const targetScreenId = item.getAttribute('data-screen');
-// Если открываем экран рейтинга, загружаем его
-if (targetScreenId === 'screen-leaderboard') {
-loadLeaderboard();
-}
-
 navItems.forEach(nav => nav.classList.remove('active'));
 item.classList.add('active');
-
+const targetScreenId = item.getAttribute('data-screen');
 screens.forEach(screen => {
 screen.classList.remove('active');
 if (screen.id === targetScreenId) screen.classList.add('active');
