@@ -246,6 +246,52 @@ rewardsList.appendChild(card);
 });
 }
 
+// --- ЗАГРУЗКА РЕЙТИНГА ---
+async function loadLeaderboard() {
+const { data, error } = await supabase
+.from('users')
+.select('telegram_id, score')
+.order('score', { ascending: false })
+.limit(100);
+
+if (error) {
+console.error('Ошибка загрузки рейтинга:', error);
+document.getElementById('leaderboardList').innerHTML = '<p>Ошибка загрузки рейтинга</p>';
+return;
+}
+
+renderLeaderboard(data);
+}
+
+function renderLeaderboard(data) {
+const container = document.getElementById('leaderboardList');
+container.innerHTML = '';
+
+data.forEach((user, index) => {
+const card = document.createElement('div');
+card.className = 'reward-card';
+card.innerHTML = `
+<div class="reward-header">
+<span class="reward-icon">${getRankEmoji(index + 1)}</span>
+<div>
+<div class="reward-title">#${index + 1} ${user.telegram_id}</div>
+<div class="reward-desc">${user.score.toLocaleString('ru-RU')} голосов</div>
+</div>
+</div>
+`;
+container.appendChild(card);
+});
+}
+
+function getRankEmoji(position) {
+switch (position) {
+case 1: return "🥇";
+case 2: return "🥈";
+case 3: return "🥉";
+default: return "👤";
+}
+}
+
 // --- ЭЛЕМЕНТЫ DOM ---
 const scoreEl = document.getElementById('score');
 const vphDisplay = document.getElementById('vphDisplay');
@@ -295,6 +341,12 @@ item.addEventListener('click', () => {
 navItems.forEach(nav => nav.classList.remove('active'));
 item.classList.add('active');
 const targetScreenId = item.getAttribute('data-screen');
+
+// Если открываем экран рейтинга, загружаем его
+if (targetScreenId === 'screen-leaderboard') {
+loadLeaderboard();
+}
+
 screens.forEach(screen => {
 screen.classList.remove('active');
 if (screen.id === targetScreenId) screen.classList.add('active');
