@@ -34,8 +34,8 @@ const rewards = [
 
 // --- SUPABASE CONFIGURATION ---
 // ⚠️ ВАЖНО: ЗАМЕНИТЕ НА СВОИ ДАННЫЕ ИЗ SUPABASE DASHBOARD!
-const SUPABASE_URL = 'https://YOUR_PROJECT_ID.supabase.co';
-const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
+const SUPABASE_URL = 'https://jagngvfawkrglnxuojtq.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImphZ25ndmZhd2tyZ2xueHVvanRxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU0MzM2MjksImV4cCI6MjEwMTAwOTYyOX0.V42tNuNn1NI6mGMgKRqk3M9gi33dC3IUpDe1M1ORYeM';
 const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // --- TELEGRAM USER DATA ---
