@@ -9,6 +9,18 @@ let clickPower = 1;
 let profitPerHour = 0;
 const energyRegenSpeed = 3;
 
+// --- ПОДКЛЮЧЕНИЕ К SUPABASE ---
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './supabase-config.js';
+
+const { createClient } = window.Supabase;
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// Получаем telegram_id из Mini App
+function getTelegramUserId() {
+    const tg = window.Telegram.WebApp;
+    return tg.initDataUnsafe?.user?.id || null;
+}
+
 // Ранги
 const ranks = [
     { name: "Новичок", minScore: 0, icon: "👶" },
