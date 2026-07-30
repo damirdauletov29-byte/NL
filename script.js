@@ -9,7 +9,7 @@ let completedTasks = [];
 let pendingTasks = [];
 
 // ⚠️ ЗАМЕНИТЕ на реальный юзернейм вашего бота (без @)
-const BOT_USERNAME = "newpeople_support_bot"; 
+const BOT_USERNAME = "NewPeopleGameBot"; 
 
 const ranks = [
 { name: "Новичок", minScore: 0, icon: "👶" },
