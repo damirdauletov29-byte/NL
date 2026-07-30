@@ -3,11 +3,14 @@ let score = 0;
 let energy = 1000;
 const maxEnergy = 1000;
 let clickPower = 1;
-let profitPerHour = 0; // Голосов в час
+let profitPerHour = 0;
 const energyRegenSpeed = 3;
-let completedTasks = []; // ID выполненных заданий
+let completedTasks = [];
+let pendingTasks = [];
 
-// Ранги
+// ⚠️ ЗАМЕНИТЕ на реальный юзернейм вашего бота (без @)
+const BOT_USERNAME = "newpeople_support_bot"; 
+
 const ranks = [
 { name: "Новичок", minScore: 0, icon: "👶" },
 { name: "Активист", minScore: 500, icon: "🌱" },
@@ -18,7 +21,6 @@ const ranks = [
 { name: "Лидер движения", minScore: 1000000, icon: "🦁" }
 ];
 
-// База данных улучшений
 const upgrades = [
 { id: 'leaflets', name: 'Печать листовок', baseCost: 100, bonus: 100, icon: '📄', level: 0 },
 { id: 'social', name: 'SMM-менеджер', baseCost: 500, bonus: 400, icon: '📱', level: 0 },
@@ -27,7 +29,6 @@ const upgrades = [
 { id: 'tv', name: 'Эфир на ТВ', baseCost: 15000, bonus: 8000, icon: '📺', level: 0 },
 ];
 
-// Задания (Квесты)
 const tasks = [
 { 
     id: 'tg_sub', 
@@ -35,19 +36,20 @@ const tasks = [
     desc: 'Подпишись на официальный канал партии "Новые люди"', 
     link: 'https://t.me/partynewpeople', 
     reward: 5000, 
-    icon: '✈️' 
+    icon: '✈️',
+    type: 'check'
 },
 { 
     id: 'vk_post', 
     name: 'Пост в ВКонтакте', 
-    desc: 'Выложи пост с хэштегом #новыелюди и вернись для проверки', 
-    link: 'https://vk.com/feed', 
+    desc: 'Выложи пост с хэштегом #новыелюди и отправь ссылку нашему боту', 
+    link: `https://t.me/${BOT_USERNAME}`, 
     reward: 10000, 
-    icon: '🔵' 
+    icon: '🔵',
+    type: 'bot'
 }
 ];
 
-// Реальные награды (Биржа Лидеров)
 const rewards = [
 { id: 'merch_sticker', name: 'Стикерпак "Новые"', desc: 'Эксклюзивный набор стикеров для Telegram', cost: 5000, icon: '🎨' },
 { id: 'merch_cap', name: 'Фирменная кепка', desc: 'Бирюзовая кепка с логотипом партии', cost: 25000, icon: '🧢' },
@@ -56,7 +58,6 @@ const rewards = [
 { id: 'meeting_leader', name: 'Завтрак с лидером', desc: 'Личная встреча с руководством движения', cost: 500000, icon: '🤝' }
 ];
 
-// Элементы DOM
 const scoreEl = document.getElementById('score');
 const vphDisplay = document.getElementById('vphDisplay');
 const energyTextEl = document.getElementById('energyText');
@@ -70,28 +71,25 @@ const upgradesList = document.getElementById('upgradesList');
 const tasksList = document.getElementById('tasksList');
 const rewardsList = document.getElementById('rewardsList');
 
-// --- СИСТЕМА СОХРАНЕНИЯ ---
 function loadGame() {
     const savedScore = localStorage.getItem('nl_score');
     const savedEnergy = localStorage.getItem('nl_energy');
     const savedProfit = localStorage.getItem('nl_profit');
     const savedClickPower = localStorage.getItem('nl_clickPower');
     const savedUpgrades = localStorage.getItem('nl_upgrades');
-    const savedCompletedTasks = localStorage.getItem('nl_completedTasks');
+    const savedCompleted = localStorage.getItem('nl_completedTasks');
+    const savedPending = localStorage.getItem('nl_pendingTasks');
     
     if (savedScore) score = parseInt(savedScore);
     if (savedEnergy) energy = parseInt(savedEnergy);
     if (savedProfit) profitPerHour = parseInt(savedProfit);
     if (savedClickPower) clickPower = parseInt(savedClickPower);
     if (savedUpgrades) {
-        const parsedUpgrades = JSON.parse(savedUpgrades);
-        parsedUpgrades.forEach((saved, index) => {
-            if (upgrades[index]) upgrades[index].level = saved.level;
-        });
+        const parsed = JSON.parse(savedUpgrades);
+        parsed.forEach((saved, index) => { if (upgrades[index]) upgrades[index].level = saved.level; });
     }
-    if (savedCompletedTasks) {
-        completedTasks = JSON.parse(savedCompletedTasks);
-    }
+    if (savedCompleted) completedTasks = JSON.parse(savedCompleted);
+    if (savedPending) pendingTasks = JSON.parse(savedPending);
 }
 
 function saveGame() {
@@ -101,20 +99,18 @@ function saveGame() {
     localStorage.setItem('nl_clickPower', clickPower);
     localStorage.setItem('nl_upgrades', JSON.stringify(upgrades.map(u => ({ id: u.id, level: u.level }))));
     localStorage.setItem('nl_completedTasks', JSON.stringify(completedTasks));
+    localStorage.setItem('nl_pendingTasks', JSON.stringify(pendingTasks));
 }
 
-// --- ОБНОВЛЕНИЕ ИНТЕРФЕЙСА ---
 function updateUI() {
     scoreEl.textContent = Math.floor(score).toLocaleString('ru-RU');
     vphDisplay.textContent = `+${profitPerHour.toLocaleString('ru-RU')}/час`;
     
     if (energyTextEl && energyFillEl) {
         energyTextEl.textContent = `${Math.floor(energy)} / ${maxEnergy}`;
-        const percentage = (energy / maxEnergy) * 100;
-        energyFillEl.style.width = `${percentage}%`;
+        energyFillEl.style.width = `${(energy / maxEnergy) * 100}%`;
     }
     
-    // Обновление ранга
     let currentRankIndex = 0;
     for (let i = 0; i < ranks.length; i++) {
         if (score >= ranks[i].minScore) currentRankIndex = i;
@@ -138,14 +134,12 @@ function updateUI() {
     renderRewards();
 }
 
-// --- ЛОГИКА ТАПА ---
 function handleTap(e) {
     e.preventDefault();
     if (energy >= clickPower) {
         score += clickPower;
         energy -= clickPower;
         updateUI();
-        
         let clientX, clientY;
         if (e.touches && e.touches.length > 0) {
             clientX = e.touches[e.touches.length - 1].clientX;
@@ -169,7 +163,6 @@ function createPopUp(x, y) {
     setTimeout(() => { pop.remove(); }, 600);
 }
 
-// --- СИСТЕМА УЛУЧШЕНИЙ ---
 function getUpgradeCost(upgrade) {
     return Math.floor(upgrade.baseCost * Math.pow(1.15, upgrade.level));
 }
@@ -209,16 +202,33 @@ function renderUpgrades() {
     });
 }
 
-// --- ЛОГИКА ЗАДАНИЙ ---
 function renderTasks() {
     if (!tasksList) return;
     tasksList.innerHTML = '';
     tasks.forEach(task => {
         const isCompleted = completedTasks.includes(task.id);
+        const isPending = pendingTasks.includes(task.id);
+        
+        let btnText = 'Перейти';
+        let btnClass = '';
+        let isDisabled = false;
+
+        if (isCompleted) {
+            btnText = 'Выполнено ✅';
+            btnClass = 'completed';
+            isDisabled = true;
+        } else if (isPending) {
+            btnText = 'На проверке ⏳';
+            btnClass = 'checking';
+            isDisabled = true;
+        } else if (task.type === 'bot') {
+            btnText = 'Отправить ссылку';
+        }
+
         const card = document.createElement('div');
         card.className = 'task-card';
         card.innerHTML = `
-            <div class="task-header" style="display:flex; align-items:center; gap:12px; width:100%;">
+            <div style="display:flex; align-items:center; gap:12px; width:100%;">
                 <div class="task-icon">${task.icon}</div>
                 <div class="task-info">
                     <div class="task-name">${task.name}</div>
@@ -227,10 +237,8 @@ function renderTasks() {
             </div>
             <div class="task-footer">
                 <span class="task-reward">+${task.reward.toLocaleString('ru-RU')} 🗳️</span>
-                <button class="task-btn ${isCompleted ? 'completed' : ''}" 
-                        onclick="handleTaskClick('${task.id}', this)" 
-                        ${isCompleted ? 'disabled' : ''}>
-                    ${isCompleted ? 'Выполнено ✅' : 'Перейти'}
+                <button class="task-btn ${btnClass}" ${isDisabled ? 'disabled' : ''} onclick="handleTaskClick('${task.id}')">
+                    ${btnText}
                 </button>
             </div>
         `;
@@ -238,119 +246,4 @@ function renderTasks() {
     });
 }
 
-function handleTaskClick(taskId, btn) {
-    const task = tasks.find(t => t.id === taskId);
-    if (!task || completedTasks.includes(taskId)) return;
-
-    // Открываем ссылку нативно через Telegram WebApp или в новой вкладке
-    if (window.Telegram && window.Telegram.WebApp) {
-        window.Telegram.WebApp.openLink(task.link);
-    } else {
-        window.open(task.link, '_blank');
-    }
-
-    // Меняем кнопку на "Проверить"
-    btn.textContent = 'Проверить';
-    btn.classList.add('checking');
-    btn.onclick = () => verifyTask(taskId, btn);
-}
-
-function verifyTask(taskId, btn) {
-    btn.textContent = 'Проверка...';
-    btn.disabled = true;
-    
-    // Имитация задержки проверки (в реальном приложении здесь был бы запрос к backend API)
-    setTimeout(() => {
-        const task = tasks.find(t => t.id === taskId);
-        if (task && !completedTasks.includes(taskId)) {
-            score += task.reward;
-            completedTasks.push(taskId);
-            saveGame();
-            updateUI();
-            
-            // Уведомление об успехе
-            if (window.Telegram && window.Telegram.WebApp) {
-                window.Telegram.WebApp.showAlert(`🎉 Задание выполнено!\nНачислено +${task.reward.toLocaleString('ru-RU')} голосов!`);
-            } else {
-                alert(`🎉 Задание выполнено!\nНачислено +${task.reward.toLocaleString('ru-RU')} голосов!`);
-            }
-        }
-    }, 1500);
-}
-
-// --- ЛОГИКА БИРЖИ ---
-function claimReward(id) {
-    const reward = rewards.find(r => r.id === id);
-    if (reward && score >= reward.cost) {
-        score -= reward.cost;
-        saveGame();
-        updateUI();
-        alert(`🎉 Поздравляем! Вы оформили заявку на "${reward.name}".\nСвяжитесь с куратором в Telegram для получения.`);
-    } else {
-        alert('Недостаточно голосов для получения этой награды!');
-    }
-}
-
-function renderRewards() {
-    if (!rewardsList) return;
-    rewardsList.innerHTML = '';
-    rewards.forEach(reward => {
-        const canClaim = score >= reward.cost;
-        const card = document.createElement('div');
-        card.className = 'reward-card';
-        card.innerHTML = `
-            <div class="reward-header">
-                <span class="reward-icon">${reward.icon}</span>
-                <div>
-                    <div class="reward-title">${reward.name}</div>
-                    <div class="reward-desc">${reward.desc}</div>
-                </div>
-            </div>
-            <div class="reward-footer">
-                <span class="reward-cost">${reward.cost.toLocaleString('ru-RU')} 🗳️</span>
-                <button class="claim-reward-btn" ${canClaim ? '' : 'disabled'} onclick="claimReward('${reward.id}')">
-                    ${canClaim ? 'Получить' : 'Недоступно'}
-                </button>
-            </div>
-        `;
-        rewardsList.appendChild(card);
-    });
-}
-
-// --- ПАССИВНЫЙ ДОХОД И РЕГЕНЕРАЦИЯ ---
-setInterval(() => {
-    if (energy < maxEnergy) energy = Math.min(maxEnergy, energy + energyRegenSpeed);
-    if (profitPerHour > 0) score += profitPerHour / 3600;
-    updateUI();
-    saveGame();
-}, 1000);
-
-// --- НАВИГАЦИЯ ---
-const navItems = document.querySelectorAll('.nav-item');
-const screens = document.querySelectorAll('.screen');
-navItems.forEach(item => {
-    item.addEventListener('click', () => {
-        navItems.forEach(nav => nav.classList.remove('active'));
-        item.classList.add('active');
-        const targetScreenId = item.getAttribute('data-screen');
-        screens.forEach(screen => {
-            screen.classList.remove('active');
-            if (screen.id === targetScreenId) screen.classList.add('active');
-        });
-    });
-});
-
-// --- ЗАПУСК ---
-if (slonBtn) {
-    slonBtn.addEventListener('touchstart', handleTap, { passive: false });
-    slonBtn.addEventListener('mousedown', handleTap);
-}
-
-// Инициализация Telegram WebApp
-if (window.Telegram && window.Telegram.WebApp) {
-    window.Telegram.WebApp.ready();
-    window.Telegram.WebApp.expand(); // Разворачиваем на весь экран
-}
-
-loadGame();
-updateUI();
+function handleTaskClick(task
