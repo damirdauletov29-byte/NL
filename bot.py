@@ -1,162 +1,145 @@
 import telebot
-import random
-import string
 import json
 import os
-from flask import Flask, request, jsonify
-from flask_cors import CORS
-from threading import Thread
+import random
+import string
 
 # ⚠️ ВАШИ ДАННЫЕ
 BOT_TOKEN = "ВАШ_ТОКЕН_ОТ_BOTFATHER"
 ADMIN_CHAT_ID = 123456789  # Ваш Telegram ID
-REWARD_AMOUNT = 10000  # Сколько очков начислять за пост
+REWARD_AMOUNT = 10000
 
 bot = telebot.TeleBot(BOT_TOKEN)
-app = Flask(__name__)
-CORS(app)  # Разрешаем запросы из игры
 
-# Файл для хранения активных промокодов
-PROMO_FILE = "promocodes.json"
+# Файл для хранения состояния промокодов
+PROMO_FILE = "promos.json"
+PROMO_POOL_SIZE = 50  # Сколько промокодов сгенерировать
 
 def load_promos():
     if os.path.exists(PROMO_FILE):
         with open(PROMO_FILE, 'r', encoding='utf-8') as f:
             return json.load(f)
-    return {}
+    return {"pool": [], "pending": {}}
 
-def save_promos(promos):
+def save_promos(data):
     with open(PROMO_FILE, 'w', encoding='utf-8') as f:
-        json.dump(promos, f, ensure_ascii=False, indent=2)
+        json.dump(data, f, ensure_ascii=False, indent=2)
 
 def generate_promo():
     return "NL-" + ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
 
-# --- ОБРАБОТКА ССЫЛОК ОТ ИГРОКОВ ---
-@bot.message_handler(func=lambda message: "vk.com" in message.text.lower() or "vk.cc" in message.text.lower())
+def init_promo_pool():
+    """Создаёт пул промокодов, если его нет"""
+    data = load_promos()
+    if not data.get("pool"):
+        data["pool"] = [generate_promo() for _ in range(PROMO_POOL_SIZE)]
+        save_promos(data)
+        print(f"✅ Создан пул из {PROMO_POOL_SIZE} промокодов")
+    return data
+
+# --- ПРИЁМ ССЫЛОК ОТ ИГРОКОВ ---
+@bot.message_handler(func=lambda m: "vk.com" in m.text.lower() or "vk.cc" in m.text.lower())
 def handle_vk_link(message):
+    data = load_promos()
     user_id = message.from_user.id
     username = message.from_user.username or "без_ника"
-    link = message.text
     
-    # Сохраняем связь user_id -> link для модератора
-    promo = generate_promo()
-    promos = load_promos()
-    promos[promo] = {"user_id": user_id, "username": username, "link": link, "amount": REWARD_AMOUNT, "used": False}
-    save_promos(promos)
+    # Сохраняем заявку на проверку
+    request_id = str(user_id) + "_" + str(message.message_id)
+    data["pending"][request_id] = {
+        "user_id": user_id,
+        "username": username,
+        "link": message.text
+    }
+    save_promos(data)
     
-    # Отправляем админу красивое сообщение с кнопками
+    # Сообщение админу с кнопками
     admin_text = (
         f"🔗 Новая ссылка на проверку\n\n"
         f"👤 Пользователь: @{username} (ID: {user_id})\n"
-        f"📎 Ссылка: {link}\n"
-        f"🎁 Промокод: `{promo}`\n\n"
-        f"Проверьте пост и нажмите кнопку ниже 👇"
+        f"📎 Ссылка: {message.text}\n\n"
+        f"Проверьте пост и нажмите кнопку 👇"
     )
     
     markup = telebot.types.InlineKeyboardMarkup()
     markup.add(
-        telebot.types.InlineKeyboardButton("✅ Начислить 10000", callback_data=f"approve_{promo}"),
-        telebot.types.InlineKeyboardButton("❌ Отклонить", callback_data=f"reject_{promo}")
+        telebot.types.InlineKeyboardButton("✅ Начислить 10000", callback_data=f"approve_{request_id}"),
+        telebot.types.InlineKeyboardButton("❌ Отклонить", callback_data=f"reject_{request_id}")
     )
-    bot.send_message(ADMIN_CHAT_ID, admin_text, reply_markup=markup, parse_mode="Markdown")
+    bot.send_message(ADMIN_CHAT_ID, admin_text, reply_markup=markup)
     
-    # Отвечаем игроку
-    bot.send_message(
-        message.chat.id,
+    bot.send_message(message.chat.id, 
         "📩 Ссылка принята! Ожидайте проверки модератором.\n"
-        "Как только мы подтвердим выполнение, вам придёт промокод для получения бонуса в игре. 🦁"
-    )
+        "После подтверждения вам придёт промокод на бонусные голоса 🦁")
 
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
-    bot.send_message(
-        message.chat.id,
+    bot.send_message(message.chat.id,
         "🐘 Привет! Это бот игры \"Тапай за Новых!\"\n\n"
         "Выложи пост в ВК с хэштегом #новыелюди и отправь ссылку сюда. "
-        "После проверки модератором ты получишь промокод на бонусные голоса!"
-    )
+        "После проверки модератором ты получишь промокод на бонусные голоса!")
 
-# --- ОБРАБОТКА НАЖАТИЙ КНОПОК АДМИНОМ ---
+# --- ОБРАБОТКА КНОПОК АДМИНА ---
 @bot.callback_query_handler(func=lambda call: True)
 def callback_handler(call):
     if call.from_user.id != ADMIN_CHAT_ID:
         bot.answer_callback_query(call.id, "⛔ Только для администратора")
         return
     
-    action, promo = call.data.split("_", 1)
-    promos = load_promos()
+    action, request_id = call.data.split("_", 1)
+    data = load_promos()
     
-    if promo not in promos:
-        bot.answer_callback_query(call.id, "❌ Промокод не найден")
+    if request_id not in data["pending"]:
+        bot.answer_callback_query(call.id, "❌ Заявка не найдена")
         return
     
-    data = promos[promo]
+    info = data["pending"][request_id]
     
     if action == "approve":
-        promos[promo]["approved"] = True
-        save_promos(promos)
+        # Берём следующий промокод из пула
+        if not data["pool"]:
+            bot.answer_callback_query(call.id, "⚠️ Пул промокодов пуст! Пополните его в коде.")
+            return
         
-        # Уведомляем админа
+        promo = data["pool"].pop(0)  # Берём первый промокод
+        del data["pending"][request_id]
+        save_promos(data)
+        
+        # Обновляем сообщение админа
         bot.edit_message_text(
-            f"✅ ОДОБРЕНО\n\n👤 @{data['username']}\n🎁 Промокод `{promo}` активен\n💰 Награда: {REWARD_AMOUNT} голосов",
+            f"✅ ОДОБРЕНО\n\n👤 @{info['username']}\n🎟️ Выдан промокод: `{promo}`\n💰 Награда: {REWARD_AMOUNT} голосов\n\n"
+            f"📊 Осталось промокодов в пуле: {len(data['pool'])}",
             call.message.chat.id, call.message.message_id, parse_mode="Markdown"
         )
         
         # Отправляем промокод игроку
-        bot.send_message(
-            data["user_id"],
+        bot.send_message(info["user_id"],
             f"🎉 Поздравляем! Ваш пост одобрен!\n\n"
             f"🎟️ Ваш промокод: `{promo}`\n"
             f"💰 Награда: {REWARD_AMOUNT} голосов\n\n"
             f"Откройте игру и введите промокод в разделе «Задания»!",
             parse_mode="Markdown"
         )
-        bot.answer_callback_query(call.id, "✅ Промокод выдан игроку")
+        bot.answer_callback_query(call.id, "✅ Промокод выдан")
         
     elif action == "reject":
-        del promos[promo]
-        save_promos(promos)
+        del data["pending"][request_id]
+        save_promos(data)
         
         bot.edit_message_text(
-            f"❌ ОТКЛОНЕНО\n\n👤 @{data['username']}\n📎 {data['link']}",
+            f"❌ ОТКЛОНЕНО\n\n👤 @{info['username']}\n📎 {info['link']}",
             call.message.chat.id, call.message.message_id
         )
-        
-        bot.send_message(data["user_id"], "😔 К сожалению, ваш пост не прошёл проверку. Попробуйте ещё раз!")
+        bot.send_message(info["user_id"], 
+            "😔 К сожалению, ваш пост не прошёл проверку. Попробуйте ещё раз!")
         bot.answer_callback_query(call.id, "❌ Отклонено")
 
-# --- HTTP API ДЛЯ ИГРЫ (проверка промокодов) ---
-@app.route('/check_promo', methods=['POST'])
-def check_promo():
-    data = request.json
-    promo = data.get('promo', '').strip().upper()
-    
-    promos = load_promos()
-    
-    if promo in promos and promos[promo].get("approved") and not promos[promo].get("used"):
-        amount = promos[promo]["amount"]
-        promos[promo]["used"] = True
-        save_promos(promos)
-        return jsonify({"success": True, "amount": amount})
-    
-    return jsonify({"success": False, "error": "Неверный или уже использованный промокод"})
-
-# --- ЗАПУСК БОТА И FLASK ОДНОВРЕМЕННО ---
-def run_bot():
-    bot.polling(none_stop=True)
-
-def run_flask():
-    app.run(host='0.0.0.0', port=5000)
-
+# --- ЗАПУСК ---
 if __name__ == "__main__":
-    print("🚀 Бот и сервер запущены...")
-    print("📡 API для игры доступен на http://localhost:5000/check_promo")
-    
-    # Запускаем Flask в отдельном потоке
-    flask_thread = Thread(target=run_flask)
-    flask_thread.daemon = True
-    flask_thread.start()
-    
-    # Запускаем бота в главном потоке
-    run_bot()
+    print("🚀 Бот запущен...")
+    data = init_promo_pool()
+    print(f"📦 В пуле {len(data['pool'])} промокодов")
+    print("📋 Промокоды (скопируйте в script.js):")
+    for p in data["pool"]:
+        print(f'    "{p}",')
+    bot.polling(none_stop=True)
