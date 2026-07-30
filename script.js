@@ -5,34 +5,55 @@ const maxEnergy = 1000;
 let clickPower = 1;
 let profitPerHour = 0; // Голосов в час
 const energyRegenSpeed = 3;
+let completedTasks = []; // ID выполненных заданий
 
 // Ранги
 const ranks = [
-    { name: "Новичок", minScore: 0, icon: "👶" },
-    { name: "Активист", minScore: 500, icon: "🌱" },
-    { name: "Агитатор", minScore: 2500, icon: "📢" },
-    { name: "Организатор", minScore: 10000, icon: "🤝" },
-    { name: "Лидер ячейки", minScore: 50000, icon: "⭐" },
-    { name: "Политик", minScore: 150000, icon: "🏛️" },
-    { name: "Лидер движения", minScore: 1000000, icon: "🦁" }
+{ name: "Новичок", minScore: 0, icon: "👶" },
+{ name: "Активист", minScore: 500, icon: "🌱" },
+{ name: "Агитатор", minScore: 2500, icon: "📢" },
+{ name: "Организатор", minScore: 10000, icon: "🤝" },
+{ name: "Лидер ячейки", minScore: 50000, icon: "⭐" },
+{ name: "Политик", minScore: 150000, icon: "🏛️" },
+{ name: "Лидер движения", minScore: 1000000, icon: "🦁" }
 ];
 
 // База данных улучшений
 const upgrades = [
-    { id: 'leaflets', name: 'Печать листовок', baseCost: 100, bonus: 100, icon: '📄', level: 0 },
-    { id: 'social', name: 'SMM-менеджер', baseCost: 500, bonus: 400, icon: '📱', level: 0 },
-    { id: 'meeting', name: 'Организация митинга', baseCost: 2000, bonus: 1500, icon: '🎤', level: 0 },
-    { id: 'office', name: 'Аренда штаба', baseCost: 5000, bonus: 3000, icon: '🏢', level: 0 },
-    { id: 'tv', name: 'Эфир на ТВ', baseCost: 15000, bonus: 8000, icon: '📺', level: 0 },
+{ id: 'leaflets', name: 'Печать листовок', baseCost: 100, bonus: 100, icon: '📄', level: 0 },
+{ id: 'social', name: 'SMM-менеджер', baseCost: 500, bonus: 400, icon: '📱', level: 0 },
+{ id: 'meeting', name: 'Организация митинга', baseCost: 2000, bonus: 1500, icon: '🎤', level: 0 },
+{ id: 'office', name: 'Аренда штаба', baseCost: 5000, bonus: 3000, icon: '🏢', level: 0 },
+{ id: 'tv', name: 'Эфир на ТВ', baseCost: 15000, bonus: 8000, icon: '📺', level: 0 },
+];
+
+// Задания (Квесты)
+const tasks = [
+{ 
+    id: 'tg_sub', 
+    name: 'Подписка на Telegram', 
+    desc: 'Подпишись на официальный канал партии "Новые люди"', 
+    link: 'https://t.me/partynewpeople', 
+    reward: 5000, 
+    icon: '✈️' 
+},
+{ 
+    id: 'vk_post', 
+    name: 'Пост в ВКонтакте', 
+    desc: 'Выложи пост с хэштегом #новыелюди и вернись для проверки', 
+    link: 'https://vk.com/feed', 
+    reward: 10000, 
+    icon: '🔵' 
+}
 ];
 
 // Реальные награды (Биржа Лидеров)
 const rewards = [
-    { id: 'merch_sticker', name: 'Стикерпак "Новые"', desc: 'Эксклюзивный набор стикеров для Telegram', cost: 5000, icon: '🎨' },
-    { id: 'merch_cap', name: 'Фирменная кепка', desc: 'Бирюзовая кепка с логотипом партии', cost: 25000, icon: '🧢' },
-    { id: 'edu_course', name: 'Курс "Политтехнолог"', desc: 'Доступ к закрытому образовательному модулю', cost: 50000, icon: '🎓' },
-    { id: 'internship', name: 'Стажировка в Госдуме', desc: 'Реальная возможность попасть в аппарат (Топ-100)', cost: 100000, icon: '🏛️' },
-    { id: 'meeting_leader', name: 'Завтрак с лидером', desc: 'Личная встреча с руководством движения', cost: 500000, icon: '🤝' }
+{ id: 'merch_sticker', name: 'Стикерпак "Новые"', desc: 'Эксклюзивный набор стикеров для Telegram', cost: 5000, icon: '🎨' },
+{ id: 'merch_cap', name: 'Фирменная кепка', desc: 'Бирюзовая кепка с логотипом партии', cost: 25000, icon: '🧢' },
+{ id: 'edu_course', name: 'Курс "Политтехнолог"', desc: 'Доступ к закрытому образовательному модулю', cost: 50000, icon: '🎓' },
+{ id: 'internship', name: 'Стажировка в Госдуме', desc: 'Реальная возможность попасть в аппарат (Топ-100)', cost: 100000, icon: '🏛️' },
+{ id: 'meeting_leader', name: 'Завтрак с лидером', desc: 'Личная встреча с руководством движения', cost: 500000, icon: '🤝' }
 ];
 
 // Элементы DOM
@@ -46,6 +67,7 @@ const rankNameEl = document.getElementById('rankName');
 const rankIconEl = document.getElementById('rankIcon');
 const levelFillEl = document.getElementById('levelFill');
 const upgradesList = document.getElementById('upgradesList');
+const tasksList = document.getElementById('tasksList');
 const rewardsList = document.getElementById('rewardsList');
 
 // --- СИСТЕМА СОХРАНЕНИЯ ---
@@ -55,17 +77,20 @@ function loadGame() {
     const savedProfit = localStorage.getItem('nl_profit');
     const savedClickPower = localStorage.getItem('nl_clickPower');
     const savedUpgrades = localStorage.getItem('nl_upgrades');
-
+    const savedCompletedTasks = localStorage.getItem('nl_completedTasks');
+    
     if (savedScore) score = parseInt(savedScore);
     if (savedEnergy) energy = parseInt(savedEnergy);
     if (savedProfit) profitPerHour = parseInt(savedProfit);
     if (savedClickPower) clickPower = parseInt(savedClickPower);
-    
     if (savedUpgrades) {
         const parsedUpgrades = JSON.parse(savedUpgrades);
         parsedUpgrades.forEach((saved, index) => {
             if (upgrades[index]) upgrades[index].level = saved.level;
         });
+    }
+    if (savedCompletedTasks) {
+        completedTasks = JSON.parse(savedCompletedTasks);
     }
 }
 
@@ -75,6 +100,7 @@ function saveGame() {
     localStorage.setItem('nl_profit', profitPerHour);
     localStorage.setItem('nl_clickPower', clickPower);
     localStorage.setItem('nl_upgrades', JSON.stringify(upgrades.map(u => ({ id: u.id, level: u.level }))));
+    localStorage.setItem('nl_completedTasks', JSON.stringify(completedTasks));
 }
 
 // --- ОБНОВЛЕНИЕ ИНТЕРФЕЙСА ---
@@ -87,7 +113,7 @@ function updateUI() {
         const percentage = (energy / maxEnergy) * 100;
         energyFillEl.style.width = `${percentage}%`;
     }
-
+    
     // Обновление ранга
     let currentRankIndex = 0;
     for (let i = 0; i < ranks.length; i++) {
@@ -96,9 +122,10 @@ function updateUI() {
     }
     const currentRank = ranks[currentRankIndex];
     const nextRank = ranks[currentRankIndex + 1];
+    
     rankNameEl.textContent = currentRank.name;
     rankIconEl.textContent = currentRank.icon;
-
+    
     if (nextRank) {
         const progress = ((score - currentRank.minScore) / (nextRank.minScore - currentRank.minScore)) * 100;
         levelFillEl.style.width = `${Math.min(100, Math.max(0, progress))}%`;
@@ -107,6 +134,7 @@ function updateUI() {
     }
     
     renderUpgrades();
+    renderTasks();
     renderRewards();
 }
 
@@ -149,16 +177,13 @@ function getUpgradeCost(upgrade) {
 function buyUpgrade(index) {
     const upgrade = upgrades[index];
     const cost = getUpgradeCost(upgrade);
-
     if (score >= cost) {
         score -= cost;
         upgrade.level++;
         profitPerHour += upgrade.bonus;
-        clickPower += 1; 
-        
+        clickPower += 1;
         saveGame();
         updateUI();
-        
         if (window.navigator.vibrate) window.navigator.vibrate(50);
     }
 }
@@ -166,15 +191,12 @@ function buyUpgrade(index) {
 function renderUpgrades() {
     if (!upgradesList) return;
     upgradesList.innerHTML = '';
-
     upgrades.forEach((upgrade, index) => {
         const cost = getUpgradeCost(upgrade);
         const canBuy = score >= cost;
-        
         const card = document.createElement('div');
         card.className = `upgrade-card ${canBuy ? '' : 'disabled'}`;
         card.onclick = () => { if (canBuy) buyUpgrade(index); };
-
         card.innerHTML = `
             <div class="upgrade-icon">${upgrade.icon}</div>
             <div class="upgrade-info">
@@ -187,11 +209,83 @@ function renderUpgrades() {
     });
 }
 
+// --- ЛОГИКА ЗАДАНИЙ ---
+function renderTasks() {
+    if (!tasksList) return;
+    tasksList.innerHTML = '';
+    tasks.forEach(task => {
+        const isCompleted = completedTasks.includes(task.id);
+        const card = document.createElement('div');
+        card.className = 'task-card';
+        card.innerHTML = `
+            <div class="task-header" style="display:flex; align-items:center; gap:12px; width:100%;">
+                <div class="task-icon">${task.icon}</div>
+                <div class="task-info">
+                    <div class="task-name">${task.name}</div>
+                    <div class="task-desc">${task.desc}</div>
+                </div>
+            </div>
+            <div class="task-footer">
+                <span class="task-reward">+${task.reward.toLocaleString('ru-RU')} 🗳️</span>
+                <button class="task-btn ${isCompleted ? 'completed' : ''}" 
+                        onclick="handleTaskClick('${task.id}', this)" 
+                        ${isCompleted ? 'disabled' : ''}>
+                    ${isCompleted ? 'Выполнено ✅' : 'Перейти'}
+                </button>
+            </div>
+        `;
+        tasksList.appendChild(card);
+    });
+}
+
+function handleTaskClick(taskId, btn) {
+    const task = tasks.find(t => t.id === taskId);
+    if (!task || completedTasks.includes(taskId)) return;
+
+    // Открываем ссылку нативно через Telegram WebApp или в новой вкладке
+    if (window.Telegram && window.Telegram.WebApp) {
+        window.Telegram.WebApp.openLink(task.link);
+    } else {
+        window.open(task.link, '_blank');
+    }
+
+    // Меняем кнопку на "Проверить"
+    btn.textContent = 'Проверить';
+    btn.classList.add('checking');
+    btn.onclick = () => verifyTask(taskId, btn);
+}
+
+function verifyTask(taskId, btn) {
+    btn.textContent = 'Проверка...';
+    btn.disabled = true;
+    
+    // Имитация задержки проверки (в реальном приложении здесь был бы запрос к backend API)
+    setTimeout(() => {
+        const task = tasks.find(t => t.id === taskId);
+        if (task && !completedTasks.includes(taskId)) {
+            score += task.reward;
+            completedTasks.push(taskId);
+            saveGame();
+            updateUI();
+            
+            // Уведомление об успехе
+            if (window.Telegram && window.Telegram.WebApp) {
+                window.Telegram.WebApp.showAlert(`🎉 Задание выполнено!\nНачислено +${task.reward.toLocaleString('ru-RU')} голосов!`);
+            } else {
+                alert(`🎉 Задание выполнено!\nНачислено +${task.reward.toLocaleString('ru-RU')} голосов!`);
+            }
+        }
+    }, 1500);
+}
+
 // --- ЛОГИКА БИРЖИ ---
 function claimReward(id) {
     const reward = rewards.find(r => r.id === id);
     if (reward && score >= reward.cost) {
-        alert(`Поздравляем! Вы оформили заявку на "${reward.name}". Свяжитесь с куратором для получения.`);
+        score -= reward.cost;
+        saveGame();
+        updateUI();
+        alert(`🎉 Поздравляем! Вы оформили заявку на "${reward.name}".\nСвяжитесь с куратором в Telegram для получения.`);
     } else {
         alert('Недостаточно голосов для получения этой награды!');
     }
@@ -200,12 +294,10 @@ function claimReward(id) {
 function renderRewards() {
     if (!rewardsList) return;
     rewardsList.innerHTML = '';
-    
     rewards.forEach(reward => {
         const canClaim = score >= reward.cost;
         const card = document.createElement('div');
         card.className = 'reward-card';
-        
         card.innerHTML = `
             <div class="reward-header">
                 <span class="reward-icon">${reward.icon}</span>
@@ -215,7 +307,7 @@ function renderRewards() {
                 </div>
             </div>
             <div class="reward-footer">
-                <span class="reward-cost">${reward.cost.toLocaleString()} 🗳️</span>
+                <span class="reward-cost">${reward.cost.toLocaleString('ru-RU')} 🗳️</span>
                 <button class="claim-reward-btn" ${canClaim ? '' : 'disabled'} onclick="claimReward('${reward.id}')">
                     ${canClaim ? 'Получить' : 'Недоступно'}
                 </button>
@@ -252,6 +344,12 @@ navItems.forEach(item => {
 if (slonBtn) {
     slonBtn.addEventListener('touchstart', handleTap, { passive: false });
     slonBtn.addEventListener('mousedown', handleTap);
+}
+
+// Инициализация Telegram WebApp
+if (window.Telegram && window.Telegram.WebApp) {
+    window.Telegram.WebApp.ready();
+    window.Telegram.WebApp.expand(); // Разворачиваем на весь экран
 }
 
 loadGame();
