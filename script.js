@@ -246,4 +246,109 @@ function renderTasks() {
     });
 }
 
-function handleTaskClick(task
+function handleTaskClick(taskId) {
+    const task = tasks.find(t => t.id === taskId);
+    if (!task || completedTasks.includes(taskId) || pendingTasks.includes(taskId)) return;
+
+    if (window.Telegram && window.Telegram.WebApp) {
+        window.Telegram.WebApp.openLink(task.link);
+    } else {
+        window.open(task.link, '_blank');
+    }
+
+    if (task.type === 'bot') {
+        // Для задания с ботом сразу ставим статус "На проверке"
+        pendingTasks.push(taskId);
+        saveGame();
+        updateUI();
+        if (window.Telegram && window.Telegram.WebApp) {
+            window.Telegram.WebApp.showAlert("📩 Отправьте ссылку на ваш пост в открывшемся чате с ботом. После проверки модератором очки будут начислены!");
+        }
+    } else {
+        // Для подписки на канал имитируем проверку (в будущем здесь будет реальный API запрос)
+        const btn = event.target;
+        btn.textContent = 'Проверка...';
+        btn.disabled = true;
+        setTimeout(() => {
+            score += task.reward;
+            completedTasks.push(taskId);
+            saveGame();
+            updateUI();
+            if (window.Telegram && window.Telegram.WebApp) {
+                window.Telegram.WebApp.showAlert(`🎉 Задание выполнено!\nНачислено +${task.reward.toLocaleString('ru-RU')} голосов!`);
+            }
+        }, 2000);
+    }
+}
+
+function claimReward(id) {
+    const reward = rewards.find(r => r.id === id);
+    if (reward && score >= reward.cost) {
+        score -= reward.cost;
+        saveGame();
+        updateUI();
+        alert(`🎉 Поздравляем! Вы оформили заявку на "${reward.name}".\nСвяжитесь с куратором в Telegram для получения.`);
+    } else {
+        alert('Недостаточно голосов для получения этой награды!');
+    }
+}
+
+function renderRewards() {
+    if (!rewardsList) return;
+    rewardsList.innerHTML = '';
+    rewards.forEach(reward => {
+        const canClaim = score >= reward.cost;
+        const card = document.createElement('div');
+        card.className = 'reward-card';
+        card.innerHTML = `
+            <div class="reward-header">
+                <span class="reward-icon">${reward.icon}</span>
+                <div>
+                    <div class="reward-title">${reward.name}</div>
+                    <div class="reward-desc">${reward.desc}</div>
+                </div>
+            </div>
+            <div class="reward-footer">
+                <span class="reward-cost">${reward.cost.toLocaleString('ru-RU')} 🗳️</span>
+                <button class="claim-reward-btn" ${canClaim ? '' : 'disabled'} onclick="claimReward('${reward.id}')">
+                    ${canClaim ? 'Получить' : 'Недоступно'}
+                </button>
+            </div>
+        `;
+        rewardsList.appendChild(card);
+    });
+}
+
+setInterval(() => {
+    if (energy < maxEnergy) energy = Math.min(maxEnergy, energy + energyRegenSpeed);
+    if (profitPerHour > 0) score += profitPerHour / 3600;
+    updateUI();
+    saveGame();
+}, 1000);
+
+const navItems = document.querySelectorAll('.nav-item');
+const screens = document.querySelectorAll('.screen');
+navItems.forEach(item => {
+    item.addEventListener('click', () => {
+        navItems.forEach(nav => nav.classList.remove('active'));
+        item.classList.add('active');
+        const targetScreenId = item.getAttribute('data-screen');
+        screens.forEach(screen => {
+            screen.classList.remove('active');
+            if (screen.id === targetScreenId) screen.classList.add('active');
+        });
+    });
+});
+
+if (slonBtn) {
+    slonBtn.addEventListener('touchstart', handleTap, { passive: false });
+    slonBtn.addEventListener('mousedown', handleTap);
+}
+
+if (window.Telegram && window.Telegram.WebApp) {
+    window.Telegram.WebApp.ready();
+    window.Telegram.WebApp.expand();
+}
+
+loadGame();
+updateUI();
