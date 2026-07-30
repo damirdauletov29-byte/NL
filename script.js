@@ -280,7 +280,37 @@ function updateTasksUI() {
         else taskButton.textContent = 'Перейдите по ссылке';
     }
 }
+// --- ЛИДЕРБОРД (ТОП АКТИВИСТОВ) ---
+async function renderLeaderboard() {
+    const container = document.getElementById('rewardsList');
+    if (!container) return;
 
+    // ПОКА ЗАМЕНИМ НА МОК-ДАННЫЕ (для теста)
+    const mockTop = [
+        { name: "Вы", score: score, region: "Ваш регион", isMe: true },
+        { name: "Иван С.", score: 1250000, region: "Москва", isMe: false },
+        { name: "Анна К.", score: 987000, region: "СПб", isMe: false },
+        { name: "Дмитрий В.", score: 743000, region: "Казань", isMe: false },
+        { name: "Елена М.", score: 521000, region: "Новосибирск", isMe: false },
+    ];
+
+    let html = `<h2 style="margin-bottom: 15px; color: #00cbd6; width: 100%;">🏆 Топ Активистов</h2>`;
+    
+    mockTop.forEach((p, i) => {
+        const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i + 1}`;
+        const bgClass = p.isMe ? 'leaderboard-row me' : 'leaderboard-row';
+        
+        html += `
+        <div class="${bgClass}">
+            <span class="lb-rank">${medal}</span>
+            <div class="lb-name">${p.name}</div>
+            <div class="lb-score">${p.score.toLocaleString()} 🗳️</div>
+            <div class="lb-region" style="font-size:12px; opacity:0.7;">${p.region}</div>
+        </div>`;
+    });
+
+    container.innerHTML = html;
+}
 // --- GAME LOOP ---
 setInterval(() => {
     if (energy < maxEnergy) energy = Math.min(maxEnergy, energy + energyRegenSpeed);
