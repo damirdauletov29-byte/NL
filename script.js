@@ -1,18 +1,15 @@
-// --- SUPABASE CONFIGURATION ---
-// ⚠️ ЗАМЕНИТЕ НА СВОИ ДАННЫЕ ИЗ SUPABASE DASHBOARD!
-const SUPABASE_URL = 'https://jagngvfawkrglnxuojtq.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImphZ25ndmZhd2tyZ2xueHVvanRxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU0MzM2MjksImV4cCI6MjEwMTAwOTYyOX0.V42tNuNn1NI6mGMgKRqk3M9gi33dC3IUpDe1M1ORYeM';
-
-const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
 // --- КОНФИГУРАЦИЯ ИГРЫ ---
 let score = 0;
 let energy = 1000;
 const maxEnergy = 1000;
 let clickPower = 1;
-let profitPerHour = 0;
+let profitPerHour = 0; // Голосов в час
 const energyRegenSpeed = 3;
+// --- НОВЫЕ ПЕРЕМЕННЫЕ ДЛЯ ЗАДАНИЯ ПОДПИСКИ ---
+let taskSubscribedCompleted = localStorage.getItem('task_subscribed_completed') === 'true';
+let taskSubscribedVisited = localStorage.getItem('task_subscribed_visited') === 'true';
 
+// Ранги
 const ranks = [
 { name: "Новичок", minScore: 0, icon: "👶" },
 { name: "Активист", minScore: 500, icon: "🌱" },
@@ -20,9 +17,9 @@ const ranks = [
 { name: "Организатор", minScore: 10000, icon: "🤝" },
 { name: "Лидер ячейки", minScore: 50000, icon: "⭐" },
 { name: "Политик", minScore: 150000, icon: "🏛️" },
-{ name: "Лидер движения", minScore: 1000000, icon: "🦁" }
+{ name: "Лидер движения", minScore: 1000000, icon: "狮子" }
 ];
-
+// База данных улучшений
 const upgrades = [
 { id: 'leaflets', name: 'Печать листовок', baseCost: 100, bonus: 100, icon: '📄', level: 0 },
 { id: 'social', name: 'SMM-менеджер', baseCost: 500, bonus: 400, icon: '📱', level: 0 },
@@ -30,7 +27,7 @@ const upgrades = [
 { id: 'office', name: 'Аренда штаба', baseCost: 5000, bonus: 3000, icon: '🏢', level: 0 },
 { id: 'tv', name: 'Эфир на ТВ', baseCost: 15000, bonus: 8000, icon: '📺', level: 0 },
 ];
-
+// Реальные награды (Биржа Лидеров)
 const rewards = [
 { id: 'merch_sticker', name: 'Стикерпак "Новые"', desc: 'Эксклюзивный набор стикеров для Telegram', cost: 5000, icon: '🎨' },
 { id: 'merch_cap', name: 'Фирменная кепка', desc: 'Бирюзовая кепка с логотипом партии', cost: 25000, icon: '🧢' },
@@ -39,77 +36,52 @@ const rewards = [
 { id: 'meeting_leader', name: 'Завтрак с лидером', desc: 'Личная встреча с руководством движения', cost: 500000, icon: '🤝' }
 ];
 
-// --- TELEGRAM USER DATA ---
-let telegramId = null;
-
-// --- ЗАГРУЗКА/СОЗДАНИЕ ПОЛЬЗОВАТЕЛЯ ИЗ SUPABASE ---
-async function loadUserFromSupabase(tgId) {
-const { data, error } = await supabase
-.from('users')
-.select('*')
-.eq('telegram_id', tgId)
-.limit(1);
-
-if (error) {
-console.error('Ошибка при загрузке пользователя:', error);
-return null;
-}
-
-if (data && data.length > 0) {
-const user = data[0];
-score = user.score || 0;
-energy = user.energy || maxEnergy;
-clickPower = user.click_power || 1;
-profitPerHour = user.profit_per_hour || 0;
-upgrades.forEach((u, i) => {
-u.level = user.upgrades?.[i]?.level || 0;
+// --- СИСТЕМА СОХРАНЕНИЯ ---
+function loadGame() {
+const savedScore = localStorage.getItem('nl_score');
+const savedEnergy = localStorage.getItem('nl_energy');
+const savedProfit = localStorage.getItem('nl_profit');
+const savedClickPower = localStorage.getItem('nl_clickPower');
+const savedUpgrades = localStorage.getItem('nl_upgrades');
+// --- ЗАГРУЗКА СТАТУСОВ ЗАДАНИЯ ---
+const savedTaskStatusCompleted = localStorage.getItem('task_subscribed_completed');
+const savedTaskStatusVisited = localStorage.getItem('task_subscribed_visited');
+if (savedScore) score = parseInt(savedScore);
+if (savedEnergy) energy = parseInt(savedEnergy);
+if (savedProfit) profitPerHour = parseInt(savedProfit);
+if (savedClickPower) clickPower = parseInt(savedClickPower);
+if (savedUpgrades) {
+const parsedUpgrades = JSON.parse(savedUpgrades);
+parsedUpgrades.forEach((saved, index) => {
+if (upgrades[index]) upgrades[index].level = saved.level;
 });
-console.log('Данные пользователя загружены из Supabase.');
-return user;
+}
+if (savedTaskStatusCompleted) taskSubscribedCompleted = savedTaskStatusCompleted === 'true';
+if (savedTaskStatusVisited) taskSubscribedVisited = savedTaskStatusVisited === 'true';
+}
+function saveGame() {
+localStorage.setItem('nl_score', score);
+localStorage.setItem('nl_energy', energy);
+localStorage.setItem('nl_profit', profitPerHour);
+localStorage.setItem('nl_clickPower', clickPower);
+localStorage.setItem('nl_upgrades', JSON.stringify(upgrades.map(u => ({ id: u.id, level: u.level }))));
+// --- СОХРАНЕНИЕ СТАТУСОВ ЗАДАНИЯ ---
+localStorage.setItem('task_subscribed_completed', taskSubscribedCompleted);
+localStorage.setItem('task_subscribed_visited', taskSubscribedVisited);
 }
 
-// Новый пользователь
-const newUser = {
-telegram_id: tgId,
-score: 0,
-energy: maxEnergy,
-click_power: 1,
-profit_per_hour: 0,
-upgrades: upgrades.map(u => ({ id: u.id, level: 0 })),
-tasks_completed: []
-};
-
-const { data: inserted, error: insertError } = await supabase
-.from('users')
-.insert([newUser])
-.select();
-
-if (insertError) {
-console.error('Ошибка при создании пользователя:', insertError);
-return null;
-}
-
-console.log('Новый пользователь создан в Supabase.');
-return inserted[0];
-}
-
-// --- СОХРАНЕНИЕ В SUPABASE ---
-async function saveGameToSupabase(tgId) {
-const updates = {
-score,
-energy,
-click_power: clickPower,
-profit_per_hour: profitPerHour,
-upgrades: upgrades.map(u => ({ id: u.id, level: u.level })),
-};
-
-const { error } = await supabase
-.from('users')
-.update(updates)
-.eq('telegram_id', tgId);
-
-if (error) console.error('Ошибка сохранения в Supabase:', error);
-}
+// Элементы DOM
+const scoreEl = document.getElementById('score');
+const vphDisplay = document.getElementById('vphDisplay');
+const energyTextEl = document.getElementById('energyText');
+const energyFillEl = document.getElementById('energyFill');
+const clickArea = document.getElementById('clickArea');
+const slonBtn = document.getElementById('slonBtn');
+const rankNameEl = document.getElementById('rankName');
+const rankIconEl = document.getElementById('rankIcon');
+const levelFillEl = document.getElementById('levelFill');
+const upgradesList = document.getElementById('upgradesList');
+const rewardsList = document.getElementById('rewardsList');
 
 // --- ОБНОВЛЕНИЕ ИНТЕРФЕЙСА ---
 function updateUI() {
@@ -120,6 +92,7 @@ energyTextEl.textContent = `${Math.floor(energy)} / ${maxEnergy}`;
 const percentage = (energy / maxEnergy) * 100;
 energyFillEl.style.width = `${percentage}%`;
 }
+// Обновление ранга
 let currentRankIndex = 0;
 for (let i = 0; i < ranks.length; i++) {
 if (score >= ranks[i].minScore) currentRankIndex = i;
@@ -146,7 +119,6 @@ if (energy >= clickPower) {
 score += clickPower;
 energy -= clickPower;
 updateUI();
-if (telegramId) saveGameToSupabase(telegramId);
 let clientX, clientY;
 if (e.touches && e.touches.length > 0) {
 clientX = e.touches[e.touches.length - 1].clientX;
@@ -158,7 +130,6 @@ clientY = e.clientY;
 createPopUp(clientX, clientY);
 }
 }
-
 function createPopUp(x, y) {
 const pop = document.createElement('div');
 pop.classList.add('tap-pop');
@@ -174,7 +145,6 @@ setTimeout(() => { pop.remove(); }, 600);
 function getUpgradeCost(upgrade) {
 return Math.floor(upgrade.baseCost * Math.pow(1.15, upgrade.level));
 }
-
 function buyUpgrade(index) {
 const upgrade = upgrades[index];
 const cost = getUpgradeCost(upgrade);
@@ -183,12 +153,11 @@ score -= cost;
 upgrade.level++;
 profitPerHour += upgrade.bonus;
 clickPower += 1;
-if (telegramId) saveGameToSupabase(telegramId);
+saveGame();
 updateUI();
 if (window.navigator.vibrate) window.navigator.vibrate(50);
 }
 }
-
 function renderUpgrades() {
 if (!upgradesList) return;
 upgradesList.innerHTML = '';
@@ -219,7 +188,6 @@ alert(`Поздравляем! Вы оформили заявку на "${reward
 alert('Недостаточно голосов для получения этой награды!');
 }
 }
-
 function renderRewards() {
 if (!rewardsList) return;
 rewardsList.innerHTML = '';
@@ -246,82 +214,78 @@ rewardsList.appendChild(card);
 });
 }
 
-// --- ЗАГРУЗКА РЕЙТИНГА ---
-async function loadLeaderboard() {
-const { data, error } = await supabase
-.from('users')
-.select('telegram_id, score')
-.order('score', { ascending: false })
-.limit(100);
+// --- ЛОГИКА ЗАДАНИЙ (TASKS) ---
 
-if (error) {
-console.error('Ошибка загрузки рейтинга:', error);
-document.getElementById('leaderboardList').innerHTML = '<p>Ошибка загрузки рейтинга</p>';
-return;
+function markLinkVisited() {
+    taskSubscribedVisited = true;
+    saveGame();
+    updateTasksUI(); // Обновить состояние кнопки
+    // Открываем ссылку в новой вкладке/окне
+    window.open('https://t.me/partynewpeople', '_blank');
 }
 
-renderLeaderboard(data);
+function completeSubscribeTask() {
+    if (taskSubscribedCompleted) {
+        alert("Вы уже получали награду за подписку!");
+        return;
+    }
+    if (!taskSubscribedVisited) {
+        alert("Сначала перейдите по ссылке на канал!");
+        return;
+    }
+    // Предполагаем, что награда составляет 5000 голосов
+    const reward = 5000;
+    score += reward;
+    taskSubscribedCompleted = true; // Отмечаем, что задание выполнено
+    saveGame(); // Убедиться, что изменения сохранены
+    updateUI(); // Обновить интерфейс игры (счет)
+    updateTasksUI(); // Обновить интерфейс заданий (кнопку)
+    alert(`Поздравляем! Вы получили ${reward} голосов за подписку на канал @partynewpeople!`);
 }
 
-function renderLeaderboard(data) {
-const container = document.getElementById('leaderboardList');
-container.innerHTML = '';
+// Функция для отображения заданий (заменяет заглушку)
+function renderTasks() {
+    const tasksContainer = document.querySelector('#screen-tasks .placeholder-content'); // Найдем контейнер внутри экрана задач
+    if (!tasksContainer) return;
 
-data.forEach((user, index) => {
-const card = document.createElement('div');
-card.className = 'reward-card';
-card.innerHTML = `
-<div class="reward-header">
-<span class="reward-icon">${getRankEmoji(index + 1)}</span>
-<div>
-<div class="reward-title">#${index + 1} ${user.telegram_id}</div>
-<div class="reward-desc">${user.score.toLocaleString('ru-RU')} голосов</div>
-</div>
-</div>
-`;
-container.appendChild(card);
-});
+    // Очистим контейнер задач, если он не пуст (например, если туда была вставлена заглушка)
+    tasksContainer.innerHTML = '<h2>💼 Поручения</h2>'; // Оставим заголовок
+
+    const taskDiv = document.createElement('div');
+    taskDiv.className = 'task-item'; // Добавьте класс для стилизации, если нужно
+    taskDiv.innerHTML = `
+        <h3>Подписаться на канал @partynewpeople</h3>
+        <p>Подпишитесь на наш официальный канал и получите награду!</p>
+        <p>Награда: 5000 голосов</p>
+        <button onclick="completeSubscribeTask()" ${taskSubscribedCompleted || (!taskSubscribedVisited && taskSubscribedCompleted) ? 'disabled' : ''}>
+            ${taskSubscribedCompleted ? 'Выполнено!' : (taskSubscribedVisited ? 'Получить награду' : 'Сначала перейдите по ссылке')}
+        </button>
+        <a href="#" onclick="event.preventDefault(); markLinkVisited();">Перейти к каналу</a>
+    `;
+    tasksContainer.appendChild(taskDiv);
+
+    // Здесь можно добавить другие задания аналогично в будущем
 }
 
-function getRankEmoji(position) {
-switch (position) {
-case 1: return "🥇";
-case 2: return "🥈";
-case 3: return "🥉";
-default: return "👤";
-}
-}
-
-// --- ЭЛЕМЕНТЫ DOM ---
-const scoreEl = document.getElementById('score');
-const vphDisplay = document.getElementById('vphDisplay');
-const energyTextEl = document.getElementById('energyText');
-const energyFillEl = document.getElementById('energyFill');
-const clickArea = document.getElementById('clickArea');
-const slonBtn = document.getElementById('slonBtn');
-const rankNameEl = document.getElementById('rankName');
-const rankIconEl = document.getElementById('rankIcon');
-const levelFillEl = document.getElementById('levelFill');
-const upgradesList = document.getElementById('upgradesList');
-const rewardsList = document.getElementById('rewardsList');
-
-// --- ИНИЦИАЛИЗАЦИЯ ---
-async function initGame() {
-const tg = window.Telegram?.WebApp;
-if (!tg) {
-alert("Запускайте через Telegram!");
-return;
-}
-
-const user = tg.initDataUnsafe?.user;
-if (!user || !user.id) {
-console.error("Не удалось получить данные пользователя");
-return;
-}
-telegramId = user.id;
-
-await loadUserFromSupabase(telegramId);
-updateUI();
+// Функция для обновления UI заданий (например, кнопки)
+function updateTasksUI() {
+    const taskButton = document.querySelector('#screen-tasks button');
+    const taskLink = document.querySelector('#screen-tasks a');
+    if (taskButton) {
+        // Кнопка неактивна, если задание выполнено ИЛИ если ссылка не посещена, но задание не выполнено
+        taskButton.disabled = taskSubscribedCompleted || (!taskSubscribedVisited && !taskSubscribedCompleted);
+        if (taskSubscribedCompleted) {
+            taskButton.textContent = 'Выполнено!';
+        } else if (taskSubscribedVisited) {
+            taskButton.textContent = 'Получить награду';
+        } else {
+            taskButton.textContent = 'Сначала перейдите по ссылке';
+        }
+    }
+    // Ссылка не требует обновления в данном случае, но можно добавить стили, если посещена
+    if (taskLink) {
+        // taskLink.style.opacity = taskSubscribedVisited ? '0.7' : '1'; // Пример стилизации
+    }
 }
 
 // --- ПАССИВНЫЙ ДОХОД И РЕГЕНЕРАЦИЯ ---
@@ -329,27 +293,27 @@ setInterval(() => {
 if (energy < maxEnergy) energy = Math.min(maxEnergy, energy + energyRegenSpeed);
 if (profitPerHour > 0) score += profitPerHour / 3600;
 updateUI();
-if (telegramId) saveGameToSupabase(telegramId);
+saveGame();
 }, 1000);
 
 // --- НАВИГАЦИЯ ---
 const navItems = document.querySelectorAll('.nav-item');
 const screens = document.querySelectorAll('.screen');
-
 navItems.forEach(item => {
 item.addEventListener('click', () => {
 navItems.forEach(nav => nav.classList.remove('active'));
 item.classList.add('active');
 const targetScreenId = item.getAttribute('data-screen');
-
-// Если открываем экран рейтинга, загружаем его
-if (targetScreenId === 'screen-leaderboard') {
-loadLeaderboard();
-}
-
 screens.forEach(screen => {
 screen.classList.remove('active');
-if (screen.id === targetScreenId) screen.classList.add('active');
+if (screen.id === targetScreenId) {
+    screen.classList.add('active');
+    // --- ДОБАВЬТЕ ЭТИ СТРОКИ ---
+    if (targetScreenId === 'screen-tasks') {
+        renderTasks(); // Перерисовать задания при открытии экрана
+    }
+    // ---
+}
 });
 });
 });
@@ -359,5 +323,5 @@ if (slonBtn) {
 slonBtn.addEventListener('touchstart', handleTap, { passive: false });
 slonBtn.addEventListener('mousedown', handleTap);
 }
-
-initGame();
+loadGame();
+updateUI();
