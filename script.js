@@ -6,11 +6,11 @@ let clickPower = 1;
 let profitPerHour = 0;
 const energyRegenSpeed = 3;
 
-// --- НОВЫЕ ПЕРЕМЕННЫЕ ДЛЯ ЗАДАНИЯ ПОДПИСКИ ---
+// --- ЗАДАНИЯ ---
 let taskSubscribedCompleted = localStorage.getItem('task_subscribed_completed') === 'true';
 let taskSubscribedVisited = localStorage.getItem('task_subscribed_visited') === 'true';
 
-// Ранги
+// --- РАНГИ, УЛУЧШЕНИЯ, НАГРАДЫ — как у вас в текущем script.txt (скопируйте их сюда) ---
 const ranks = [
     { name: "Новичок", minScore: 0, icon: "👶" },
     { name: "Активист", minScore: 500, icon: "🌱" },
@@ -21,7 +21,6 @@ const ranks = [
     { name: "Лидер движения", minScore: 1000000, icon: "狮子" }
 ];
 
-// Улучшения
 const upgrades = [
     { id: 'leaflets', name: 'Печать листовок', baseCost: 100, bonus: 100, icon: '📄', level: 0 },
     { id: 'social', name: 'SMM-менеджер', baseCost: 500, bonus: 400, icon: '📱', level: 0 },
@@ -30,7 +29,6 @@ const upgrades = [
     { id: 'tv', name: 'Эфир на ТВ', baseCost: 15000, bonus: 8000, icon: '📺', level: 0 },
 ];
 
-// Награды
 const rewards = [
     { id: 'merch_sticker', name: 'Стикерпак "Новые"', desc: 'Эксклюзивный набор стикеров для Telegram', cost: 5000, icon: '🎨' },
     { id: 'merch_cap', name: 'Фирменная кепка', desc: 'Бирюзовая кепка с логотипом партии', cost: 25000, icon: '🧢' },
@@ -40,59 +38,55 @@ const rewards = [
 ];
 
 // --- СИСТЕМА СОХРАНЕНИЯ ---
-let randomUserId = null;
+let randomUserId;
 
 function loadGame() {
-    // Генерируем/загружаем randomUserId
+    // Генерируем ID
     randomUserId = localStorage.getItem('nl_random_user_id');
     if (!randomUserId) {
         randomUserId = crypto.randomUUID();
         localStorage.setItem('nl_random_user_id', randomUserId);
     }
 
-    // Загрузка данных из localStorage
+    // Загружаем из localStorage
     const savedScore = localStorage.getItem('nl_score');
     const savedEnergy = localStorage.getItem('nl_energy');
     const savedProfit = localStorage.getItem('nl_profit');
     const savedClickPower = localStorage.getItem('nl_clickPower');
     const savedUpgrades = localStorage.getItem('nl_upgrades');
 
-    if (savedScore) score = parseInt(savedScore);
-    if (savedEnergy) energy = parseInt(savedEnergy);
-    if (savedProfit) profitPerHour = parseInt(savedProfit);
-    if (savedClickPower) clickPower = parseInt(savedClickPower);
+    if (savedScore) score = +savedScore;
+    if (savedEnergy) energy = +savedEnergy;
+    if (savedProfit) profitPerHour = +savedProfit;
+    if (savedClickPower) clickPower = +savedClickPower;
     if (savedUpgrades) {
-        const parsed = JSON.parse(savedUpgrades);
-        parsed.forEach((s, i) => { if (upgrades[i]) upgrades[i].level = s.level; });
+        JSON.parse(savedUpgrades).forEach((s, i) => {
+            if (upgrades[i]) upgrades[i].level = s.level;
+        });
     }
 
-    // --- ИНТЕГРАЦИЯ SUPABASE (работает только после загрузки SDK) ---
+    // --- SUPABASE: проверяем, загружен ли SDK ---
     if (typeof window.supabase !== 'undefined') {
-        const SUPABASE_URL = 'https://jagngvfawkrglnxuojtq.supabase.co'; // ЗАМЕНИТЕ
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImphZ25ndmZhd2tyZ2xueHVvanRxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU0MzM2MjksImV4cCI6MjEwMTAwOTYyOX0.V42tNuNn1NI6mGMgKRqk3M9gi33dC3IUpDe1M1ORYeM'; // ЗАМЕНИТЕ
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const supabase = window.supabase.createClient(
+            'https://jagngvfawkrglnxuojtq.supabase.co', // ЗАМЕНИТЕ
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImphZ25ndmZhd2tyZ2xueHVvanRxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU0MzM2MjksImV4cCI6MjEwMTAwOTYyOX0.V42tNuNn1NI6mGMgKRqk3M9gi33dC3IUpDe1M1ORYeM'    // ЗАМЕНИТЕ
+        );
 
         supabase.from('users')
-            .select('*')
+            .select('score')
             .eq('random_user_id', randomUserId)
             .single()
             .then(({ data, error }) => {
                 if (error && error.code !== 'PGRST116') {
                     console.warn('Supabase: ошибка загрузки', error);
-                } else if (!data) {
-                    // Нового пользователя нет — создаём
-                    supabase.from('users').insert([{ random_user_id: randomUserId, score: score }])
-                        .then(() => console.log('Создан пользователь:', randomUserId));
-                } else {
-                    // Есть пользователь — обновляем локальный score
+                } else if (data) {
+                    // Обновляем локальный score, если в базе больше
                     score = Math.max(score, data.score || 0);
-                    console.log('Загружен пользователь:', data);
                 }
-                updateUI(); // После завершения Supabase — обновляем интерфейс
+                updateUI(); // Обновляем интерфейс только после Supabase
             });
     } else {
-        // Если Supabase не загружен, просто обновляем UI
-        updateUI();
+        updateUI(); // Если Supabase нет — обновляем сразу
     }
 }
 
@@ -107,26 +101,23 @@ function saveGame() {
 
     // Сохраняем в Supabase, если доступен
     if (typeof window.supabase !== 'undefined' && randomUserId) {
-        const SUPABASE_URL = 'YOUR_SUPABASE_PROJECT_URL'; // ЗАМЕНИТЕ
-        const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY'; // ЗАМЕНИТЕ
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
+        const supabase = window.supabase.createClient(
+            'YOUR_SUPABASE_PROJECT_URL',
+            'YOUR_SUPABASE_ANON_KEY'
+        );
         supabase.from('users')
-            .update({ score })
-            .eq('random_user_id', randomUserId)
+            .upsert({ random_user_id: randomUserId, score }, { onConflict: 'random_user_id' })
             .then(({ error }) => {
                 if (error) console.warn('Supabase: ошибка сохранения', error);
-                else console.log('Счёт сохранён для:', randomUserId);
             });
     }
 }
 
-// Элементы DOM
+// --- DOM и UI ---
 const scoreEl = document.getElementById('score');
 const vphDisplay = document.getElementById('vphDisplay');
 const energyTextEl = document.getElementById('energyText');
 const energyFillEl = document.getElementById('energyFill');
-const clickArea = document.getElementById('clickArea');
 const slonBtn = document.getElementById('slonBtn');
 const rankNameEl = document.getElementById('rankName');
 const rankIconEl = document.getElementById('rankIcon');
@@ -134,14 +125,11 @@ const levelFillEl = document.getElementById('levelFill');
 const upgradesList = document.getElementById('upgradesList');
 const rewardsList = document.getElementById('rewardsList');
 
-// --- ОБНОВЛЕНИЕ ИНТЕРФЕЙСА ---
 function updateUI() {
-    scoreEl.textContent = Math.floor(score).toLocaleString('ru-RU');
+    scoreEl.textContent = score.toLocaleString('ru-RU');
     vphDisplay.textContent = `+${profitPerHour.toLocaleString('ru-RU')}/час`;
-    if (energyTextEl && energyFillEl) {
-        energyTextEl.textContent = `${Math.floor(energy)} / ${maxEnergy}`;
-        energyFillEl.style.width = `${(energy / maxEnergy) * 100}%`;
-    }
+    energyTextEl.textContent = `${energy} / ${maxEnergy}`;
+    energyFillEl.style.width = `${(energy / maxEnergy) * 100}%`;
 
     let idx = 0;
     for (let i = 0; i < ranks.length; i++) if (score >= ranks[i].minScore) idx = i;
@@ -154,33 +142,30 @@ function updateUI() {
     renderRewards();
 }
 
-// --- ЛОГИКА ТАПА ---
+// --- ТАП ---
 function handleTap(e) {
     e.preventDefault();
     if (energy >= clickPower) {
         score += clickPower;
         energy -= clickPower;
         updateUI();
-        const rect = clickArea.getBoundingClientRect();
-        const x = e.touches?.[0]?.clientX || e.clientX;
-        const y = e.touches?.[0]?.clientY || e.clientY;
-        createPopUp(x - rect.left, y - rect.top);
+        const rect = document.getElementById('clickArea').getBoundingClientRect();
+        const x = (e.touches?.[0]?.clientX || e.clientX) - rect.left;
+        const y = (e.touches?.[0]?.clientY || e.clientY) - rect.top;
+        const pop = document.createElement('div');
+        pop.className = 'tap-pop';
+        pop.textContent = `+${clickPower}`;
+        pop.style.left = `${x - 15}px`;
+        pop.style.top = `${y - 30}px`;
+        document.getElementById('clickArea').appendChild(pop);
+        setTimeout(() => pop.remove(), 600);
     }
-}
-function createPopUp(x, y) {
-    const pop = document.createElement('div');
-    pop.className = 'tap-pop';
-    pop.textContent = `+${clickPower}`;
-    pop.style.left = `${x - 15}px`;
-    pop.style.top = `${y - 30}px`;
-    clickArea.appendChild(pop);
-    setTimeout(() => pop.remove(), 600);
 }
 
 // --- УЛУЧШЕНИЯ ---
-function getUpgradeCost(u) { return Math.floor(u.baseCost * Math.pow(1.15, u.level)); }
+function getCost(u) { return Math.floor(u.baseCost * Math.pow(1.15, u.level)); }
 function buyUpgrade(i) {
-    const u = upgrades[i], cost = getUpgradeCost(u);
+    const u = upgrades[i], cost = getCost(u);
     if (score >= cost) {
         score -= cost;
         u.level++;
@@ -188,14 +173,13 @@ function buyUpgrade(i) {
         clickPower++;
         saveGame();
         updateUI();
-        if (navigator.vibrate) navigator.vibrate(50);
     }
 }
 function renderUpgrades() {
     if (!upgradesList) return;
     upgradesList.innerHTML = '';
     upgrades.forEach((u, i) => {
-        const cost = getUpgradeCost(u);
+        const cost = getCost(u);
         const can = score >= cost;
         const card = document.createElement('div');
         card.className = `upgrade-card ${can ? '' : 'disabled'}`;
@@ -256,8 +240,8 @@ function completeSubscribeTask() {
 function renderTasks() {
     const cont = document.querySelector('#screen-tasks .placeholder-content');
     if (!cont) return;
-    cont.innerHTML = '<h2>💼 Поручения</h2>';
-    cont.innerHTML += `
+    cont.innerHTML = `
+        <h2>💼 Поручения</h2>
         <div class="task-item">
             <h3>Подписаться на канал @partynewpeople</h3>
             <p>Награда: 5000 голосов</p>
@@ -274,14 +258,24 @@ function updateTasksUI() {
     btn.textContent = taskSubscribedCompleted ? 'Выполнено!' : (taskSubscribedVisited ? 'Получить награду' : 'Сначала перейдите по ссылке');
 }
 
-// --- ЗАПУСК ---
-document.addEventListener('DOMContentLoaded', () => {
-    if (slonBtn) {
-        slonBtn.addEventListener('touchstart', handleTap, { passive: false });
-        slonBtn.addEventListener('mousedown', handleTap);
-    }
-    loadGame(); // ← Вызов здесь, после DOM загружен
+// --- НАВИГАЦИЯ ---
+document.querySelectorAll('.nav-item').forEach(item => {
+    item.addEventListener('click', () => {
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        item.classList.add('active');
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        const id = item.dataset.screen;
+        document.getElementById(id).classList.add('active');
+        if (id === 'screen-tasks') renderTasks();
+    });
 });
+
+// --- ЗАПУСК ---
+if (slonBtn) {
+    slonBtn.addEventListener('touchstart', handleTap, { passive: false });
+    slonBtn.addEventListener('mousedown', handleTap);
+}
+loadGame();
 
 // --- ГЛОБАЛЬНЫЕ ФУНКЦИИ ---
 window.markLinkVisited = markLinkVisited;
