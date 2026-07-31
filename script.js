@@ -91,7 +91,8 @@ async function loadGame() {
 
         if (fetchError && fetchError.code !== 'PGRST116') { // PGRST116 означает "Row not found"
             console.error('Supabase fetch error:', fetchError);
-            alert('Ошибка подключения к серверу. Данные могут быть не синхронизированы.');
+            // alert('Ошибка подключения к серверу. Данные могут быть не синхронизированы.');
+            console.warn('Не удалось получить данные из Supabase. Работаю с локальными данными.');
         } else if (!existingUser) {
             // Пользователь не найден, создаем новую запись
             const { error: insertError } = await supabase
@@ -100,7 +101,8 @@ async function loadGame() {
 
             if (insertError) {
                 console.error('Supabase insert error:', insertError);
-                alert('Ошибка сохранения данных. Попробуйте перезагрузить страницу.');
+                // alert('Ошибка сохранения данных в Supabase.');
+                console.warn('Не удалось сохранить нового пользователя в Supabase.');
             } else {
                 console.log('New user created in Supabase with ID:', randomUserId);
             }
@@ -113,7 +115,8 @@ async function loadGame() {
         }
     } catch (err) {
          console.error('Unexpected error during Supabase operation:', err);
-         alert('Произошла внутренняя ошибка. Данные могут быть не синхронизированы.');
+         // alert('Произошла внутренняя ошибка. Данные могут быть не синхронизированы.');
+         console.warn('Внутренняя ошибка Supabase. Работаю с локальными данными.');
     }
 }
 
@@ -139,12 +142,14 @@ async function saveGame() {
             if (updateError) {
                 console.error('Supabase update error:', updateError);
                 // alert('Ошибка синхронизации с сервером.');
+                console.warn('Не удалось обновить счёт в Supabase.');
             } else {
                 console.log('Score updated in Supabase for user:', randomUserId);
             }
         } catch (err) {
              console.error('Unexpected error during Supabase update:', err);
              // alert('Произошла внутренняя ошибка синхронизации.');
+             console.warn('Внутренняя ошибка при обновлении Supabase.');
         }
     }
 }
@@ -189,6 +194,10 @@ function updateUI() {
     }
     renderUpgrades();
     renderRewards();
+    // Обновление UI задач при обновлении общего интерфейса (например, после выполнения задания)
+    if (document.querySelector('#screen-tasks').classList.contains('active')) {
+        updateTasksUI();
+    }
 }
 
 // --- ЛОГИКА ТАПА ---
@@ -320,9 +329,7 @@ function completeSubscribeTask() {
     score += reward;
     taskSubscribedCompleted = true; // Отмечаем, что задание выполнено
     saveGame(); // Убедиться, что изменения сохранены
-    updateUI(); // Обновить интерфейс игры (счет)
-    updateTasksUI(); // Обновить интерфейс заданий (кнопку)
-    alert(`Поздравляем! Вы получили ${reward} голосов за подписку на канал @partynewpeople!`);
+    updateUI(); // Обновить интерфейс игры (счет) и вызвать updateTasksUI
 }
 
 // Функция для отображения заданий (заменяет заглушку)
@@ -337,18 +344,17 @@ function renderTasks() {
         <h3>Подписаться на канал @partynewpeople</h3>
         <p>Подпишитесь на наш официальный канал и получите награду!</p>
         <p>Награда: 5000 голосов</p>
-        <button onclick="completeSubscribeTask()" ${taskSubscribedCompleted || (!taskSubscribedVisited && !taskSubscribedCompleted) ? 'disabled' : ''}>
-            ${taskSubscribedCompleted ? 'Выполнено!' : (taskSubscribedVisited ? 'Получить награду' : 'Сначала перейдите по ссылке')}
-        </button>
+        <button id="task-subscribe-button">Загрузка...</button>
         <a href="#" onclick="event.preventDefault(); markLinkVisited();">Перейти к каналу</a>
     `;
     tasksContainer.appendChild(taskDiv);
+    updateTasksUI(); // Вызовем updateTasksUI сразу после рендера
     // Здесь можно добавить другие задания аналогично в будущем
 }
 
 // Функция для обновления UI заданий (например, кнопки)
 function updateTasksUI() {
-    const taskButton = document.querySelector('#screen-tasks button');
+    const taskButton = document.getElementById('task-subscribe-button'); // Используем ID для точности
     const taskLink = document.querySelector('#screen-tasks a');
     if (taskButton) {
         // Кнопка неактивна, если задание выполнено ИЛИ если ссылка не посещена, но задание не выполнено
