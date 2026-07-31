@@ -59,6 +59,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helve
 .reward-cost { font-size: 14px; font-weight: bold; color: #00ffcc; }
 .claim-reward-btn { background: #00cbd6; color: #0d1b1e; border: none; padding: 8px 16px; border-radius: 8px; font-weight: bold; font-size: 12px; cursor: pointer; }
 .claim-reward-btn:disabled { background: #555; color: #aaa; cursor: not-allowed; }
+
 /* Стили для заданий */
 .task-item { background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(0, 203, 214, 0.2); border-radius: 18px; padding: 15px; display: flex; flex-direction: column; gap: 10px; }
 .task-item h3 { font-size: 16px; font-weight: bold; color: #00ffcc; }
@@ -109,8 +110,8 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helve
 <!-- ЭКРАН 3: ЗАДАНИЯ -->
 <div class="screen" id="screen-tasks">
 <div class="placeholder-content">
-<h2>💼 Поручения</h2>
-<!-- Список заданий будет добавлен сюда script.js -->
+    <h2>💼 Поручения</h2>
+    <!-- Список заданий будет добавлен сюда script.js -->
 </div>
 </div>
 <!-- ЭКРАН 4: БИРЖА ЛИДЕРОВ -->
@@ -126,6 +127,5 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helve
 <div class="nav-item" data-screen="screen-friends"><span class="nav-icon">👥</span><span>Биржа</span></div>
 </nav>
 <script src="script.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script> <!-- Подключение SDK Supabase -->
 </body>
 </html>
