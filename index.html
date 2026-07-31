@@ -316,7 +316,7 @@
 
     // Инициализация клиента только если данные введены
     let supabaseClient = null;
-    if (SUPABASE_URL !== 'ВАШ_PROJECT_URL_ЗДЕСЬ' && SUPABASE_ANON_KEY !== 'ВАШ_ANON_KEY_ЗДЕСЬ') {
+    if (SUPABASE_URL !== 'https://ckppbsddgmqpmwppwujh.supabase.co' && SUPABASE_ANON_KEY !== 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNrcHBic2RkZ21xcG13cHB3dWpoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU1Mjc2MzYsImV4cCI6MjEwMTEwMzYzNn0.RCNjYdie4EmB58aVXGC2YlELUsl3wC3PtYgNMmmadvE') {
         supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     } else {
         console.warn("⚠️ Supabase ключи не настроены! Рейтинг работать не будет.");
