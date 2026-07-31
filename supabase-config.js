@@ -1,7 +1,3 @@
---- supabase-config.js (原始)
-
-
-+++ supabase-config.js (修改后)
 // === КОНФИГУРАЦИЯ SUPABASE ===
 // Замените эти значения на ваши из проекта Supabase
 const SUPABASE_URL = 'https://ckppbsddgmqpmwppwujh.supabase.co';
