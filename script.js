@@ -68,8 +68,8 @@ function loadGame() {
 
     // --- ИНТЕГРАЦИЯ SUPABASE (работает только после загрузки SDK) ---
     if (typeof window.supabase !== 'undefined') {
-        const SUPABASE_URL = 'YOUR_SUPABASE_PROJECT_URL'; // ЗАМЕНИТЕ
-        const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY'; // ЗАМЕНИТЕ
+        const SUPABASE_URL = 'https://jagngvfawkrglnxuojtq.supabase.co'; // ЗАМЕНИТЕ
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImphZ25ndmZhd2tyZ2xueHVvanRxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU0MzM2MjksImV4cCI6MjEwMTAwOTYyOX0.V42tNuNn1NI6mGMgKRqk3M9gi33dC3IUpDe1M1ORYeM'; // ЗАМЕНИТЕ
         const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         supabase.from('users')
