@@ -15,8 +15,9 @@ let profitPerHour = 0; // Голосов в час
 const energyRegenSpeed = 3;
 
 // --- НОВЫЕ ПЕРЕМЕННЫЕ ДЛЯ ЗАДАНИЯ ПОДПИСКИ ---
-let taskSubscribedCompleted = false; // Инициализируем явно
-let taskSubscribedVisited = false;   // Инициализируем явно
+// Используем вашу улучшенную инициализацию
+let taskSubscribedCompleted = localStorage.getItem('task_subscribed_completed') === 'true';
+let taskSubscribedVisited = localStorage.getItem('task_subscribed_visited') === 'true';
 
 // Ранги
 const ranks = [
@@ -63,8 +64,9 @@ async function loadGame() {
     const savedClickPower = localStorage.getItem('nl_clickPower');
     const savedUpgrades = localStorage.getItem('nl_upgrades');
     // --- ЗАГРУЗКА СТАТУСОВ ЗАДАНИЯ ---
-    const savedTaskStatusCompleted = localStorage.getItem('task_subscribed_completed');
-    const savedTaskStatusVisited = localStorage.getItem('task_subscribed_visited');
+    // Эти строки больше не нужны, так как переменные инициализируются выше
+    // const savedTaskStatusCompleted = localStorage.getItem('task_subscribed_completed');
+    // const savedTaskStatusVisited = localStorage.getItem('task_subscribed_visited');
 
     if (savedScore) score = parseInt(savedScore);
     if (savedEnergy) energy = parseInt(savedEnergy);
@@ -76,10 +78,6 @@ async function loadGame() {
             if (upgrades[index]) upgrades[index].level = saved.level;
         });
     }
-    // --- ПРАВИЛЬНАЯ ИНИЦИАЛИЗАЦИЯ СТАТУСОВ ЗАДАНИЯ ---
-    if (savedTaskStatusCompleted) taskSubscribedCompleted = savedTaskStatusCompleted === 'true';
-    if (savedTaskStatusVisited) taskSubscribedVisited = savedTaskStatusVisited === 'true';
-
     // --- НОВАЯ ЛОГИКА: Проверка/Создание пользователя в Supabase ---
     try {
         // Проверяем, есть ли пользователь с таким random_user_id в базе
@@ -408,13 +406,13 @@ navItems.forEach(item => {
 
 // --- ЗАПУСК ---
 document.addEventListener('DOMContentLoaded', async () => { // Обернем в DOMContentLoaded и async
-    await loadGame(); // Ждем завершения асинхронной загрузки и синхронизации с Supabase
-    updateUI();
     // Добавляем обработчики кликов
     if (slonBtn) {
         slonBtn.addEventListener('touchstart', handleTap, { passive: false });
         slonBtn.addEventListener('mousedown', handleTap);
     }
+    await loadGame(); // Ждем завершения асинхронной загрузки и синхронизации с Supabase
+    updateUI();
 });
 
 // --- ГЛОБАЛЬНЫЕ ФУНКЦИИ для кнопок заданий (если они вызываются из HTML) ---
