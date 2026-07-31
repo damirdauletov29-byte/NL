@@ -67,6 +67,19 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helve
 .task-item button { background: #00cbd6; color: #0d1b1e; border: none; padding: 8px 16px; border-radius: 8px; font-weight: bold; font-size: 12px; cursor: pointer; margin-top: 5px; }
 .task-item button:disabled { background: #555; color: #aaa; cursor: not-allowed; }
 .task-item a { display: inline-block; margin-top: 10px; color: #00cbd6; text-decoration: underline; font-size: 13px; }
+
+/* Рейтинг */
+.leaderboard-list { width: 100%; max-width: 400px; display: flex; flex-direction: column; gap: 10px; padding-bottom: 20px; }
+.leaderboard-item { background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(0, 203, 214, 0.2); border-radius: 15px; padding: 12px 15px; display: flex; align-items: center; gap: 15px; }
+.leaderboard-rank { font-size: 18px; font-weight: 900; color: #00cbd6; min-width: 30px; text-align: center; }
+.leaderboard-avatar { width: 40px; height: 40px; background: rgba(0, 203, 214, 0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; }
+.leaderboard-info { flex: 1; }
+.leaderboard-name { font-weight: bold; font-size: 14px; color: #ffffff; }
+.leaderboard-score { font-size: 13px; color: #00ffcc; font-weight: 600; }
+.leaderboard-item.top-1 { background: linear-gradient(90deg, rgba(255, 215, 0, 0.2), rgba(255, 255, 255, 0.05)); border-color: gold; }
+.leaderboard-item.top-2 { background: linear-gradient(90deg, rgba(192, 192, 192, 0.2), rgba(255, 255, 255, 0.05)); border-color: silver; }
+.leaderboard-item.top-3 { background: linear-gradient(90deg, rgba(205, 127, 50, 0.2), rgba(255, 255, 255, 0.05)); border-color: #cd7f32; }
+.leaderboard-me { background: rgba(0, 203, 214, 0.15); border: 2px solid #00cbd6; }
 </style>
 </head>
 <body>
@@ -120,11 +133,18 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helve
 <p style="font-size: 13px; opacity: 0.7; margin-bottom: 15px; width: 100%;">Обменивай голоса на реальные возможности от партии</p>
 <div class="rewards-list" id="rewardsList"></div>
 </div>
+<!-- ЭКРАН 5: РЕЙТИНГ -->
+<div class="screen" id="screen-leaderboard">
+<h2 style="margin-bottom: 15px; color: #00cbd6; width: 100%;">🏅 Рейтинг игроков</h2>
+<p style="font-size: 13px; opacity: 0.7; margin-bottom: 15px; width: 100%;">Топ участников по количеству голосов</p>
+<div class="leaderboard-list" id="leaderboardList"></div>
+</div>
 <nav class="navbar">
 <div class="nav-item active" data-screen="screen-tap"><span class="nav-icon">🐘</span><span>Тап</span></div>
 <div class="nav-item" data-screen="screen-upgrade"><span class="nav-icon">📈</span><span>Прокачка</span></div>
 <div class="nav-item" data-screen="screen-tasks"><span class="nav-icon">💼</span><span>Задания</span></div>
 <div class="nav-item" data-screen="screen-friends"><span class="nav-icon">👥</span><span>Биржа</span></div>
+<div class="nav-item" data-screen="screen-leaderboard"><span class="nav-icon">🏆</span><span>Рейтинг</span></div>
 </nav>
 <script src="script.js"></script>
 </body>

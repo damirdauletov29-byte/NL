@@ -82,6 +82,7 @@ const rankIconEl = document.getElementById('rankIcon');
 const levelFillEl = document.getElementById('levelFill');
 const upgradesList = document.getElementById('upgradesList');
 const rewardsList = document.getElementById('rewardsList');
+const leaderboardList = document.getElementById('leaderboardList');
 
 // --- ОБНОВЛЕНИЕ ИНТЕРФЕЙСА ---
 function updateUI() {
@@ -214,6 +215,53 @@ rewardsList.appendChild(card);
 });
 }
 
+// --- ЛОГИКА РЕЙТИНГА (Leaderboard) ---
+// Демо-данные для рейтинга (в будущем можно заменить на реальные данные из базы)
+const leaderboardData = [
+{ name: "Алексей М.", score: 2500000, avatar: "🦁" },
+{ name: "Дмитрий К.", score: 1800000, avatar: "🐯" },
+{ name: "Мария С.", score: 1200000, avatar: "🦅" },
+{ name: "Иван П.", score: 850000, avatar: "🐺" },
+{ name: "Елена В.", score: 620000, avatar: "🦊" },
+{ name: "Сергей Н.", score: 450000, avatar: "🐻" },
+{ name: "Анна Т.", score: 320000, avatar: "🐼" },
+{ name: "Максим Р.", score: 210000, avatar: "🐨" },
+{ name: "Ольга Д.", score: 150000, avatar: "🐸" },
+{ name: "Павел Г.", score: 95000, avatar: "🐙" }
+];
+
+function renderLeaderboard() {
+if (!leaderboardList) return;
+leaderboardList.innerHTML = '';
+
+// Сортируем по очкам (по убыванию)
+const sortedLeaderboard = [...leaderboardData].sort((a, b) => b.score - a.score);
+
+// Добавляем текущего игрока в рейтинг
+const currentPlayer = { name: "Вы", score: Math.floor(score), avatar: "🐘", isMe: true };
+const allPlayers = [...sortedLeaderboard, currentPlayer].sort((a, b) => b.score - a.score);
+
+allPlayers.forEach((player, index) => {
+const rank = index + 1;
+const card = document.createElement('div');
+card.className = 'leaderboard-item';
+if (rank === 1) card.classList.add('top-1');
+if (rank === 2) card.classList.add('top-2');
+if (rank === 3) card.classList.add('top-3');
+if (player.isMe) card.classList.add('leaderboard-me');
+
+card.innerHTML = `
+<div class="leaderboard-rank">${rank}</div>
+<div class="leaderboard-avatar">${player.avatar}</div>
+<div class="leaderboard-info">
+<div class="leaderboard-name">${player.name}${player.isMe ? ' (Вы)' : ''}</div>
+<div class="leaderboard-score">${player.score.toLocaleString('ru-RU')} 🗳️</div>
+</div>
+`;
+leaderboardList.appendChild(card);
+});
+}
+
 // --- ЛОГИКА ЗАДАНИЙ (TASKS) ---
 
 function markLinkVisited() {
@@ -308,11 +356,12 @@ screens.forEach(screen => {
 screen.classList.remove('active');
 if (screen.id === targetScreenId) {
     screen.classList.add('active');
-    // --- ДОБАВЬТЕ ЭТИ СТРОКИ ---
     if (targetScreenId === 'screen-tasks') {
-        renderTasks(); // Перерисовать задания при открытии экрана
+        renderTasks();
     }
-    // ---
+    if (targetScreenId === 'screen-leaderboard') {
+        renderLeaderboard();
+    }
 }
 });
 });
