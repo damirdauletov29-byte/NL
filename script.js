@@ -1,3 +1,11 @@
+// --- КОНФИГУРАЦИЯ SUPABASE ---
+const SUPABASE_URL = 'YOUR_SUPABASE_PROJECT_URL'; // ЗАМЕНИТЕ НА ВАШ URL
+const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY'; // ЗАМЕНИТЕ НА ВАШ КЛЮЧ
+const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// --- НОВЫЕ ПЕРЕМЕННЫЕ ДЛЯ SUPABASE ---
+let randomUserId = null; // Инициализируется в loadGame
+
 // --- КОНФИГУРАЦИЯ ИГРЫ ---
 let score = 0;
 let energy = 1000;
@@ -40,7 +48,15 @@ const rewards = [
 ];
 
 // --- СИСТЕМА СОХРАНЕНИЯ ---
-function loadGame() {
+async function loadGame() {
+    // Загрузка/генерация Random User ID
+    randomUserId = localStorage.getItem('nl_random_user_id');
+    if (!randomUserId) {
+        randomUserId = crypto.randomUUID(); // Генерируем случайный UUID
+        localStorage.setItem('nl_random_user_id', randomUserId);
+    }
+
+    // Загрузка других данных из localStorage
     const savedScore = localStorage.getItem('nl_score');
     const savedEnergy = localStorage.getItem('nl_energy');
     const savedProfit = localStorage.getItem('nl_profit');
@@ -63,10 +79,47 @@ function loadGame() {
     // --- ПРАВИЛЬНАЯ ИНИЦИАЛИЗАЦИЯ СТАТУСОВ ЗАДАНИЯ ---
     if (savedTaskStatusCompleted) taskSubscribedCompleted = savedTaskStatusCompleted === 'true';
     if (savedTaskStatusVisited) taskSubscribedVisited = savedTaskStatusVisited === 'true';
+
+    // --- НОВАЯ ЛОГИКА: Проверка/Создание пользователя в Supabase ---
+    try {
+        // Проверяем, есть ли пользователь с таким random_user_id в базе
+        let { data: existingUser, error: fetchError } = await supabase
+            .from('users')
+            .select('*')
+            .eq('random_user_id', randomUserId)
+            .single(); // single() ожидает одну строку
+
+        if (fetchError && fetchError.code !== 'PGRST116') { // PGRST116 означает "Row not found"
+            console.error('Supabase fetch error:', fetchError);
+            alert('Ошибка подключения к серверу. Данные могут быть не синхронизированы.');
+        } else if (!existingUser) {
+            // Пользователь не найден, создаем новую запись
+            const { error: insertError } = await supabase
+                .from('users')
+                .insert([{ random_user_id: randomUserId, score: score }]);
+
+            if (insertError) {
+                console.error('Supabase insert error:', insertError);
+                alert('Ошибка сохранения данных. Попробуйте перезагрузить страницу.');
+            } else {
+                console.log('New user created in Supabase with ID:', randomUserId);
+            }
+        } else {
+            // Пользователь найден, загружаем score из базы
+            // ВАЖНО: Реализуем простое слияние - используем максимальный счет между localStorage и базой
+            const serverScore = existingUser.score || 0;
+            score = Math.max(score, serverScore);
+            console.log('User loaded from Supabase with score:', serverScore);
+        }
+    } catch (err) {
+         console.error('Unexpected error during Supabase operation:', err);
+         alert('Произошла внутренняя ошибка. Данные могут быть не синхронизированы.');
+    }
 }
 
-function saveGame() {
-     localStorage.setItem('nl_score', score);
+async function saveGame() {
+     // Сохраняем в localStorage как обычно
+    localStorage.setItem('nl_score', score);
     localStorage.setItem('nl_energy', energy);
     localStorage.setItem('nl_profit', profitPerHour);
     localStorage.setItem('nl_clickPower', clickPower);
@@ -74,6 +127,26 @@ function saveGame() {
     // --- СОХРАНЕНИЕ СТАТУСОВ ЗАДАНИЯ ---
     localStorage.setItem('task_subscribed_completed', taskSubscribedCompleted);
     localStorage.setItem('task_subscribed_visited', taskSubscribedVisited);
+
+    // --- НОВАЯ ЛОГИКА: Обновление score в Supabase ---
+    if (randomUserId) { // Убедимся, что ID есть
+        try {
+            const { error: updateError } = await supabase
+                .from('users')
+                .update({ score: score })
+                .eq('random_user_id', randomUserId);
+
+            if (updateError) {
+                console.error('Supabase update error:', updateError);
+                // alert('Ошибка синхронизации с сервером.');
+            } else {
+                console.log('Score updated in Supabase for user:', randomUserId);
+            }
+        } catch (err) {
+             console.error('Unexpected error during Supabase update:', err);
+             // alert('Произошла внутренняя ошибка синхронизации.');
+        }
+    }
 }
 
 // Элементы DOM
@@ -295,11 +368,14 @@ function updateTasksUI() {
 }
 
 // --- ПАССИВНЫЙ ДОХОД И РЕГЕНЕРАЦИЯ ---
-setInterval(() => {
+setInterval(async () => { // Обернуто в async
     if (energy < maxEnergy) energy = Math.min(maxEnergy, energy + energyRegenSpeed);
     if (profitPerHour > 0) score += profitPerHour / 3600;
     updateUI();
-    saveGame();
+    // Вызов saveGame() внутри setInterval может быть ресурсоемким из-за сетевых запросов.
+    // Рассмотрите сохранение в Supabase менее часто (например, раз в 10-30 секунд)
+    // или при определенных событиях (покупка улучшения, выполнение задания).
+    // await saveGame(); // Не рекомендуется вызывать так часто
 }, 1000);
 
 // --- НАВИГАЦИЯ ---
@@ -325,8 +401,8 @@ navItems.forEach(item => {
 });
 
 // --- ЗАПУСК ---
-document.addEventListener('DOMContentLoaded', () => { // Обернем в DOMContentLoaded
-    loadGame(); // Вызов loadGame при загрузке
+document.addEventListener('DOMContentLoaded', async () => { // Обернем в DOMContentLoaded и async
+    await loadGame(); // Ждем завершения асинхронной загрузки и синхронизации с Supabase
     updateUI();
     // Добавляем обработчики кликов
     if (slonBtn) {
