@@ -7,8 +7,8 @@ let profitPerHour = 0; // Голосов в час
 const energyRegenSpeed = 3;
 
 // --- НОВЫЕ ПЕРЕМЕННЫЕ ДЛЯ ЗАДАНИЯ ПОДПИСКИ ---
-let taskSubscribedCompleted = false; // Инициализируется позже
-let taskSubscribedVisited = false; // Инициализируется позже
+let taskSubscribedCompleted = false; // Инициализируем явно
+let taskSubscribedVisited = false;   // Инициализируем явно
 
 // Ранги
 const ranks = [
@@ -39,29 +39,14 @@ const rewards = [
     { id: 'meeting_leader', name: 'Завтрак с лидером', desc: 'Личная встреча с руководством движения', cost: 500000, icon: '🤝' }
 ];
 
-// --- КОНФИГУРАЦИЯ SUPABASE ---
-const SUPABASE_URL = 'https://jagngvfawkrglnxuojtq.supabase.co'; // ЗАМЕНИТЕ НА ВАШ URL
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImphZ25ndmZhd2tyZ2xueHVvanRxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU0MzM2MjksImV4cCI6MjEwMTAwOTYyOX0.V42tNuNn1NI6mGMgKRqk3M9gi33dC3IUpDe1M1ORYeM'; // ЗАМЕНИТЕ НА ВАШ КЛЮЧ
-const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-// --- НОВЫЕ ПЕРЕМЕННЫЕ ДЛЯ SUPABASE ---
-let randomUserId = null; // Инициализируется в loadGame
-
 // --- СИСТЕМА СОХРАНЕНИЯ ---
-async function loadGame() {
-    // Загрузка/генерация Random User ID
-    randomUserId = localStorage.getItem('nl_random_user_id');
-    if (!randomUserId) {
-        randomUserId = crypto.randomUUID(); // Генерируем случайный UUID
-        localStorage.setItem('nl_random_user_id', randomUserId);
-    }
-
-    // Загрузка других данных из localStorage
+function loadGame() {
     const savedScore = localStorage.getItem('nl_score');
     const savedEnergy = localStorage.getItem('nl_energy');
     const savedProfit = localStorage.getItem('nl_profit');
     const savedClickPower = localStorage.getItem('nl_clickPower');
     const savedUpgrades = localStorage.getItem('nl_upgrades');
+    // --- ЗАГРУЗКА СТАТУСОВ ЗАДАНИЯ ---
     const savedTaskStatusCompleted = localStorage.getItem('task_subscribed_completed');
     const savedTaskStatusVisited = localStorage.getItem('task_subscribed_visited');
 
@@ -75,75 +60,20 @@ async function loadGame() {
             if (upgrades[index]) upgrades[index].level = saved.level;
         });
     }
+    // --- ПРАВИЛЬНАЯ ИНИЦИАЛИЗАЦИЯ СТАТУСОВ ЗАДАНИЯ ---
     if (savedTaskStatusCompleted) taskSubscribedCompleted = savedTaskStatusCompleted === 'true';
     if (savedTaskStatusVisited) taskSubscribedVisited = savedTaskStatusVisited === 'true';
-
-    // --- НОВАЯ ЛОГИКА: Проверка/Создание пользователя в Supabase ---
-    try {
-        // Проверяем, есть ли пользователь с таким random_user_id в базе
-        let { data: existingUser, error: fetchError } = await supabase
-            .from('users')
-            .select('*')
-            .eq('random_user_id', randomUserId)
-            .single(); // single() ожидает одну строку
-
-        if (fetchError && fetchError.code !== 'PGRST116') { // PGRST116 означает "Row not found"
-            console.error('Supabase fetch error:', fetchError);
-            alert('Ошибка подключения к серверу. Данные могут быть не синхронизированы.');
-        } else if (!existingUser) {
-            // Пользователь не найден, создаем новую запись
-            const { error: insertError } = await supabase
-                .from('users')
-                .insert([{ random_user_id: randomUserId, score: score }]);
-
-            if (insertError) {
-                console.error('Supabase insert error:', insertError);
-                alert('Ошибка сохранения данных. Попробуйте перезагрузить страницу.');
-            } else {
-                console.log('New user created in Supabase with ID:', randomUserId);
-            }
-        } else {
-            // Пользователь найден, загружаем score из базы
-            // ВАЖНО: Реализуем простое слияние - используем максимальный счет между localStorage и базой
-            const serverScore = existingUser.score || 0;
-            score = Math.max(score, serverScore);
-            console.log('User loaded from Supabase with score:', serverScore);
-        }
-    } catch (err) {
-         console.error('Unexpected error during Supabase operation:', err);
-         alert('Произошла внутренняя ошибка. Данные могут быть не синхронизированы.');
-    }
 }
 
-async function saveGame() {
-     // Сохраняем в localStorage как обычно
-    localStorage.setItem('nl_score', score);
+function saveGame() {
+     localStorage.setItem('nl_score', score);
     localStorage.setItem('nl_energy', energy);
     localStorage.setItem('nl_profit', profitPerHour);
     localStorage.setItem('nl_clickPower', clickPower);
     localStorage.setItem('nl_upgrades', JSON.stringify(upgrades.map(u => ({ id: u.id, level: u.level }))));
+    // --- СОХРАНЕНИЕ СТАТУСОВ ЗАДАНИЯ ---
     localStorage.setItem('task_subscribed_completed', taskSubscribedCompleted);
     localStorage.setItem('task_subscribed_visited', taskSubscribedVisited);
-
-    // --- НОВАЯ ЛОГИКА: Обновление score в Supabase ---
-    if (randomUserId) { // Убедимся, что ID есть
-        try {
-            const { error: updateError } = await supabase
-                .from('users')
-                .update({ score: score })
-                .eq('random_user_id', randomUserId);
-
-            if (updateError) {
-                console.error('Supabase update error:', updateError);
-                // alert('Ошибка синхронизации с сервером.');
-            } else {
-                console.log('Score updated in Supabase for user:', randomUserId);
-            }
-        } catch (err) {
-             console.error('Unexpected error during Supabase update:', err);
-             // alert('Произошла внутренняя ошибка синхронизации.');
-        }
-    }
 }
 
 // Элементы DOM
@@ -334,7 +264,7 @@ function renderTasks() {
         <h3>Подписаться на канал @partynewpeople</h3>
         <p>Подпишитесь на наш официальный канал и получите награду!</p>
         <p>Награда: 5000 голосов</p>
-        <button onclick="completeSubscribeTask()" ${taskSubscribedCompleted || (!taskSubscribedVisited && taskSubscribedCompleted) ? 'disabled' : ''}>
+        <button onclick="completeSubscribeTask()" ${taskSubscribedCompleted || (!taskSubscribedVisited && !taskSubscribedCompleted) ? 'disabled' : ''}>
             ${taskSubscribedCompleted ? 'Выполнено!' : (taskSubscribedVisited ? 'Получить награду' : 'Сначала перейдите по ссылке')}
         </button>
         <a href="#" onclick="event.preventDefault(); markLinkVisited();">Перейти к каналу</a>
@@ -365,14 +295,11 @@ function updateTasksUI() {
 }
 
 // --- ПАССИВНЫЙ ДОХОД И РЕГЕНЕРАЦИЯ ---
-setInterval(async () => { // Обернуто в async
+setInterval(() => {
     if (energy < maxEnergy) energy = Math.min(maxEnergy, energy + energyRegenSpeed);
     if (profitPerHour > 0) score += profitPerHour / 3600;
     updateUI();
-    // Вызов saveGame() внутри setInterval может быть ресурсоемким из-за сетевых запросов.
-    // Рассмотрите сохранение в Supabase менее часто (например, раз в 10-30 секунд)
-    // или при определенных событиях (покупка улучшения, выход из игры).
-    // await saveGame(); // Не рекомендуется вызывать так часто
+    saveGame();
 }, 1000);
 
 // --- НАВИГАЦИЯ ---
@@ -398,8 +325,8 @@ navItems.forEach(item => {
 });
 
 // --- ЗАПУСК ---
-document.addEventListener('DOMContentLoaded', async () => {
-    await loadGame(); // Ждем завершения загрузки и синхронизации с Supabase
+document.addEventListener('DOMContentLoaded', () => { // Обернем в DOMContentLoaded
+    loadGame(); // Вызов loadGame при загрузке
     updateUI();
     // Добавляем обработчики кликов
     if (slonBtn) {
