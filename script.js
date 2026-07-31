@@ -1,4 +1,3 @@
---- script.js (原始)
 // --- КОНФИГУРАЦИЯ ИГРЫ ---
 let score = 0;
 let energy = 1000;
