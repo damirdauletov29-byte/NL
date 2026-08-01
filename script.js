@@ -1,3 +1,39 @@
+// КОНФИГУРАЦИЯ SUPABASE
+// 1. Зарегистрируйтесь на https://supabase.com (бесплатно)
+// 2. Создайте новый проект
+// 3. В Settings -> API скопируйте Project URL и anon/public key
+// 4. Вставьте их ниже:
+const SUPABASE_URL = 'YOUR_SUPABASE_URL'; // Например: 'https://xxxxx.supabase.co'
+const SUPABASE_KEY = 'YOUR_SUPABASE_KEY'; // Начинается с 'eyJ...'
+
+let supabase;
+
+// Telegram WebApp
+const tg = window.Telegram?.WebApp;
+let telegramUser = null;
+
+if (tg) {
+    tg.ready();
+    tg.expand(); // Развернуть на весь экран
+    telegramUser = tg.initDataUnsafe?.user || null;
+}
+
+// Инициализация Supabase после загрузки страницы
+async function initSupabase() {
+    if (SUPABASE_URL !== 'YOUR_SUPABASE_URL' && SUPABASE_KEY !== 'YOUR_SUPABASE_KEY') {
+        try {
+            // Динамический импорт клиента Supabase
+            const { createClient } = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm');
+            supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+            console.log('Supabase успешно подключен');
+        } catch (e) {
+            console.log('Не удалось подключить Supabase:', e.message);
+        }
+    } else {
+        console.log('Supabase не настроен. Используйте демо-режим.');
+    }
+}
+
 // --- КОНФИГУРАЦИЯ ИГРЫ ---
 let score = 0;
 let energy = 1000;
@@ -216,50 +252,171 @@ rewardsList.appendChild(card);
 }
 
 // --- ЛОГИКА РЕЙТИНГА (Leaderboard) ---
-// Демо-данные для рейтинга (в будущем можно заменить на реальные данные из базы)
-const leaderboardData = [
-{ name: "Алексей М.", score: 2500000, avatar: "🦁" },
-{ name: "Дмитрий К.", score: 1800000, avatar: "🐯" },
-{ name: "Мария С.", score: 1200000, avatar: "🦅" },
-{ name: "Иван П.", score: 850000, avatar: "🐺" },
-{ name: "Елена В.", score: 620000, avatar: "🦊" },
-{ name: "Сергей Н.", score: 450000, avatar: "🐻" },
-{ name: "Анна Т.", score: 320000, avatar: "🐼" },
-{ name: "Максим Р.", score: 210000, avatar: "🐨" },
-{ name: "Ольга Д.", score: 150000, avatar: "🐸" },
-{ name: "Павел Г.", score: 95000, avatar: "🐙" }
-];
 
-function renderLeaderboard() {
-if (!leaderboardList) return;
-leaderboardList.innerHTML = '';
+// Функция для получения аватара по ID пользователя (используем первую букву имени)
+function getAvatarForUser(user) {
+    const avatars = ['🦁', '🐯', '🦅', '🐺', '🦊', '🐻', '🐼', '🐨', '🐸', '🐙', '🦄', '🐲', '🐘', '🦉', '🦋'];
+    if (user.first_name) {
+        const charCode = user.first_name.charCodeAt(0);
+        return avatars[charCode % avatars.length];
+    }
+    return '👤';
+}
 
-// Сортируем по очкам (по убыванию)
-const sortedLeaderboard = [...leaderboardData].sort((a, b) => b.score - a.score);
+// Функция для загрузки и отображения рейтинга из Supabase
+async function renderLeaderboard() {
+    if (!leaderboardList) return;
+    leaderboardList.innerHTML = '<p style="text-align:center; opacity:0.7;">Загрузка...</p>';
+    
+    let allPlayers = [];
+    
+    // Пытаемся загрузить данные из Supabase
+    if (supabase && SUPABASE_URL !== 'YOUR_SUPABASE_URL') {
+        try {
+            // Загружаем топ игроков
+            const { data: topPlayers, error } = await supabase
+                .from('players')
+                .select('*')
+                .order('score', { ascending: false })
+                .limit(50);
+            
+            if (error) {
+                console.error('Ошибка загрузки рейтинга:', error);
+            } else if (topPlayers) {
+                allPlayers = topPlayers.map(p => ({
+                    id: p.id,
+                    name: p.username || p.first_name || 'Игрок',
+                    score: p.score || 0,
+                    avatar: getAvatarForUser(p),
+                    isMe: false
+                }));
+            }
+        } catch (e) {
+            console.log('Не удалось загрузить рейтинг из базы, используем демо-режим');
+        }
+    }
+    
+    // Если данных нет или Supabase не настроен, используем демо-данные
+    if (allPlayers.length === 0) {
+        const leaderboardData = [
+            { name: "Алексей М.", score: 2500000, avatar: "🦁" },
+            { name: "Дмитрий К.", score: 1800000, avatar: "🐯" },
+            { name: "Мария С.", score: 1200000, avatar: "🦅" },
+            { name: "Иван П.", score: 850000, avatar: "🐺" },
+            { name: "Елена В.", score: 620000, avatar: "🦊" },
+            { name: "Сергей Н.", score: 450000, avatar: "🐻" },
+            { name: "Анна Т.", score: 320000, avatar: "🐼" },
+            { name: "Максим Р.", score: 210000, avatar: "🐨" },
+            { name: "Ольга Д.", score: 150000, avatar: "🐸" },
+            { name: "Павел Г.", score: 95000, avatar: "🐙" }
+        ];
+        allPlayers = leaderboardData.map(p => ({ ...p, isMe: false }));
+    }
+    
+    // Добавляем текущего игрока
+    const currentPlayerName = telegramUser 
+        ? (telegramUser.first_name + ' ' + (telegramUser.last_name || '')).trim() 
+        : 'Вы';
+    const currentPlayer = { 
+        name: currentPlayerName, 
+        score: Math.floor(score), 
+        avatar: telegramUser ? getAvatarForUser(telegramUser) : '🐘', 
+        isMe: true 
+    };
+    
+    // Объединяем и сортируем
+    const combinedPlayers = [...allPlayers, currentPlayer];
+    const sortedPlayers = combinedPlayers.sort((a, b) => b.score - a.score);
+    
+    // Удаляем дубликаты текущего игрока (если он уже есть в базе)
+    const uniquePlayers = [];
+    const seenIds = new Set();
+    for (const player of sortedPlayers) {
+        if (player.isMe) {
+            if (!seenIds.has('me')) {
+                uniquePlayers.push(player);
+                seenIds.add('me');
+            }
+        } else if (player.id && !seenIds.has(player.id)) {
+            uniquePlayers.push(player);
+            seenIds.add(player.id);
+        } else if (!player.id) {
+            uniquePlayers.push(player);
+        }
+    }
+    
+    // Ограничиваем до топ-50 + текущий игрок
+    const displayPlayers = uniquePlayers.slice(0, 51);
+    
+    // Рендерим список
+    leaderboardList.innerHTML = '';
+    displayPlayers.forEach((player, index) => {
+        const rank = index + 1;
+        const card = document.createElement('div');
+        card.className = 'leaderboard-item';
+        if (rank === 1) card.classList.add('top-1');
+        if (rank === 2) card.classList.add('top-2');
+        if (rank === 3) card.classList.add('top-3');
+        if (player.isMe) card.classList.add('leaderboard-me');
+        
+        card.innerHTML = `
+        <div class="leaderboard-rank">${rank}</div>
+        <div class="leaderboard-avatar">${player.avatar}</div>
+        <div class="leaderboard-info">
+        <div class="leaderboard-name">${player.name}${player.isMe ? ' (Вы)' : ''}</div>
+        <div class="leaderboard-score">${player.score.toLocaleString('ru-RU')} 🗳️</div>
+        </div>
+        `;
+        leaderboardList.appendChild(card);
+    });
+}
 
-// Добавляем текущего игрока в рейтинг
-const currentPlayer = { name: "Вы", score: Math.floor(score), avatar: "🐘", isMe: true };
-const allPlayers = [...sortedLeaderboard, currentPlayer].sort((a, b) => b.score - a.score);
-
-allPlayers.forEach((player, index) => {
-const rank = index + 1;
-const card = document.createElement('div');
-card.className = 'leaderboard-item';
-if (rank === 1) card.classList.add('top-1');
-if (rank === 2) card.classList.add('top-2');
-if (rank === 3) card.classList.add('top-3');
-if (player.isMe) card.classList.add('leaderboard-me');
-
-card.innerHTML = `
-<div class="leaderboard-rank">${rank}</div>
-<div class="leaderboard-avatar">${player.avatar}</div>
-<div class="leaderboard-info">
-<div class="leaderboard-name">${player.name}${player.isMe ? ' (Вы)' : ''}</div>
-<div class="leaderboard-score">${player.score.toLocaleString('ru-RU')} 🗳️</div>
-</div>
-`;
-leaderboardList.appendChild(card);
-});
+// Функция для сохранения результата игрока в базу
+async function saveScoreToDatabase() {
+    if (!supabase || SUPABASE_URL === 'YOUR_SUPABASE_URL' || !telegramUser) {
+        return; // Supabase не настроен или пользователь не из Telegram
+    }
+    
+    try {
+        const playerId = telegramUser.id.toString();
+        const username = (telegramUser.first_name + ' ' + (telegramUser.last_name || '')).trim();
+        
+        // Проверяем, существует ли уже игрок
+        const { data: existingPlayer } = await supabase
+            .from('players')
+            .select('*')
+            .eq('id', playerId)
+            .single();
+        
+        if (existingPlayer) {
+            // Обновляем существующего игрока
+            await supabase
+                .from('players')
+                .update({ 
+                    score: Math.floor(score),
+                    username: username,
+                    first_name: telegramUser.first_name,
+                    last_name: telegramUser.last_name,
+                    updated_at: new Date().toISOString()
+                })
+                .eq('id', playerId);
+        } else {
+            // Создаем нового игрока
+            await supabase
+                .from('players')
+                .insert([{
+                    id: playerId,
+                    score: Math.floor(score),
+                    username: username,
+                    first_name: telegramUser.first_name,
+                    last_name: telegramUser.last_name,
+                    created_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString()
+                }]);
+        }
+    } catch (e) {
+        console.error('Ошибка сохранения в базу:', e);
+    }
 }
 
 // --- ЛОГИКА ЗАДАНИЙ (TASKS) ---
@@ -374,3 +531,23 @@ slonBtn.addEventListener('mousedown', handleTap);
 }
 loadGame();
 updateUI();
+
+// Инициализация Supabase при запуске
+initSupabase();
+
+// Периодическое сохранение в базу данных (каждые 5 секунд)
+setInterval(() => {
+    saveScoreToDatabase();
+}, 5000);
+
+// Сохраняем при закрытии/сворачивании приложения
+window.addEventListener('beforeunload', () => {
+    saveScoreToDatabase();
+});
+
+// Сохраняем при переключении вкладок
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') {
+        saveScoreToDatabase();
+    }
+});
