@@ -118,13 +118,24 @@ if (savedTaskInviteCompleted) taskInviteCompleted = savedTaskInviteCompleted ===
 if (savedInvitedFriends) invitedFriends = parseInt(savedInvitedFriends);
 if (savedReferralCode) referralCode = savedReferralCode;
 
-// --- ВОССТАНОВЛЕНИЕ ЭНЕРГИИ ЗА ВРЕМЯ ОТСУТСТВИЯ ---
+// --- ВОССТАНОВЛЕНИЕ ЭНЕРГИИ И НАЧИСЛЕНИЕ ОФФЛАЙН-ДОХОДА ---
 if (savedLastLoginTime) {
     const now = Date.now();
     const timeAway = now - parseInt(savedLastLoginTime); // время в миллисекундах
     const secondsAway = Math.floor(timeAway / 1000);
+
+    // Восстановление энергии
     const regeneratedEnergy = secondsAway * energyRegenSpeed;
     energy = Math.min(maxEnergy, energy + regeneratedEnergy);
+
+    // Начисление оффлайн-дохода от profitPerHour
+    if (profitPerHour > 0) {
+        const hoursAway = timeAway / (1000 * 60 * 60); // переводим в часы
+        const offlineEarnings = Math.floor(profitPerHour * hoursAway);
+        score += offlineEarnings;
+        console.log(`Оффлайн-доход: ${offlineEarnings} голосов за ${secondsAway} сек.`);
+    }
+
     console.log(`Прошло времени: ${secondsAway} сек. Восстановлено энергии: ${regeneratedEnergy}`);
 }
 lastLoginTime = Date.now();
@@ -313,7 +324,7 @@ async function renderLeaderboard() {
     if (supabase && SUPABASE_URL !== 'YOUR_SUPABASE_URL') {
         try {
             // Загружаем топ игроков
-            const { data: topPlayers, error } = await supabase
+            const {  topPlayers, error } = await supabase
                 .from('players')
                 .select('*')
                 .order('score', { ascending: false })
@@ -429,7 +440,7 @@ async function saveScoreToDatabase() {
         const username = (telegramUser.first_name + ' ' + (telegramUser.last_name || '')).trim();
 
         // Проверяем, существует ли уже игрок
-        const { data: existingPlayer } = await supabase
+        const {  existingPlayer } = await supabase
             .from('players')
             .select('*')
             .eq('id', playerId)
@@ -549,7 +560,7 @@ async function checkReferralOnStart() {
         }
 
         // Проверяем, существует ли реферер в базе
-        const { data: referrer } = await supabase
+        const {  referrer } = await supabase
             .from('players')
             .select('id')
             .eq('id', referrerId)
@@ -559,7 +570,7 @@ async function checkReferralOnStart() {
             const currentUserId = telegramUser.id.toString();
 
             // Проверяем, не был ли уже записан этот реферал
-            const { data: existingReferral } = await supabase
+            const {  existingReferral } = await supabase
                 .from('referrals')
                 .select('*')
                 .eq('referred_id', currentUserId)
@@ -602,7 +613,7 @@ async function completeInviteTask() {
             const currentUserId = telegramUser.id.toString();
 
             // Получаем всех рефералов текущего пользователя
-            const { data: referrals, error } = await supabase
+            const {  referrals, error } = await supabase
                 .from('referrals')
                 .select('*')
                 .eq('referrer_id', currentUserId);
@@ -658,7 +669,7 @@ async function loadInvitedFriendsFromDB() {
     try {
         const currentUserId = telegramUser.id.toString();
 
-        const { data: referrals, error } = await supabase
+        const {  referrals, error } = await supabase
             .from('referrals')
             .select('*')
             .eq('referrer_id', currentUserId);
