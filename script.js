@@ -17,7 +17,7 @@ if (tg) {
     tg.ready();
     tg.expand(); // Развернуть на весь экран
     telegramUser = tg.initDataUnsafe?.user || null;
-    
+
     // Получаем параметр start из initData (для реферальной системы)
     const initData = tg.initDataUnsafe;
     if (initData && initData.start_param) {
@@ -51,6 +51,7 @@ const maxEnergy = 1000;
 let clickPower = 1;
 let profitPerHour = 0; // Голосов в час
 const energyRegenSpeed = 3;
+let lastLoginTime = Date.now(); // Время последнего входа/выхода
 // --- НОВЫЕ ПЕРЕМЕННЫЕ ДЛЯ ЗАДАНИЯ ПОДПИСКИ ---
 let taskSubscribedCompleted = localStorage.getItem('task_subscribed_completed') === 'true';
 let taskSubscribedVisited = localStorage.getItem('task_subscribed_visited') === 'true';
@@ -93,6 +94,7 @@ const savedEnergy = localStorage.getItem('nl_energy');
 const savedProfit = localStorage.getItem('nl_profit');
 const savedClickPower = localStorage.getItem('nl_clickPower');
 const savedUpgrades = localStorage.getItem('nl_upgrades');
+const savedLastLoginTime = localStorage.getItem('nl_lastLoginTime');
 // --- ЗАГРУЗКА СТАТУСОВ ЗАДАНИЯ ---
 const savedTaskStatusCompleted = localStorage.getItem('task_subscribed_completed');
 const savedTaskStatusVisited = localStorage.getItem('task_subscribed_visited');
@@ -115,6 +117,17 @@ if (savedTaskStatusVisited) taskSubscribedVisited = savedTaskStatusVisited === '
 if (savedTaskInviteCompleted) taskInviteCompleted = savedTaskInviteCompleted === 'true';
 if (savedInvitedFriends) invitedFriends = parseInt(savedInvitedFriends);
 if (savedReferralCode) referralCode = savedReferralCode;
+
+// --- ВОССТАНОВЛЕНИЕ ЭНЕРГИИ ЗА ВРЕМЯ ОТСУТСТВИЯ ---
+if (savedLastLoginTime) {
+    const now = Date.now();
+    const timeAway = now - parseInt(savedLastLoginTime); // время в миллисекундах
+    const secondsAway = Math.floor(timeAway / 1000);
+    const regeneratedEnergy = secondsAway * energyRegenSpeed;
+    energy = Math.min(maxEnergy, energy + regeneratedEnergy);
+    console.log(`Прошло времени: ${secondsAway} сек. Восстановлено энергии: ${regeneratedEnergy}`);
+}
+lastLoginTime = Date.now();
 }
 function saveGame() {
 localStorage.setItem('nl_score', score);
@@ -122,6 +135,7 @@ localStorage.setItem('nl_energy', energy);
 localStorage.setItem('nl_profit', profitPerHour);
 localStorage.setItem('nl_clickPower', clickPower);
 localStorage.setItem('nl_upgrades', JSON.stringify(upgrades.map(u => ({ id: u.id, level: u.level }))));
+localStorage.setItem('nl_lastLoginTime', lastLoginTime);
 // --- СОХРАНЕНИЕ СТАТУСОВ ЗАДАНИЯ ---
 localStorage.setItem('task_subscribed_completed', taskSubscribedCompleted);
 localStorage.setItem('task_subscribed_visited', taskSubscribedVisited);
@@ -292,9 +306,9 @@ function getAvatarForUser(user) {
 async function renderLeaderboard() {
     if (!leaderboardList) return;
     leaderboardList.innerHTML = '<p style="text-align:center; opacity:0.7;">Загрузка...</p>';
-    
+
     let allPlayers = [];
-    
+
     // Пытаемся загрузить данные из Supabase
     if (supabase && SUPABASE_URL !== 'YOUR_SUPABASE_URL') {
         try {
@@ -304,7 +318,7 @@ async function renderLeaderboard() {
                 .select('*')
                 .order('score', { ascending: false })
                 .limit(50);
-            
+
             if (error) {
                 console.error('Ошибка загрузки рейтинга:', error);
             } else if (topPlayers) {
@@ -320,7 +334,7 @@ async function renderLeaderboard() {
             console.log('Не удалось загрузить рейтинг из базы, используем демо-режим');
         }
     }
-    
+
     // Если данных нет или Supabase не настроен, используем демо-данные
     if (allPlayers.length === 0) {
         const leaderboardData = [
@@ -337,28 +351,28 @@ async function renderLeaderboard() {
         ];
         allPlayers = leaderboardData.map(p => ({ ...p, isMe: false }));
     }
-    
+
     // Добавляем текущего игрока
-    const currentPlayerName = telegramUser 
-        ? (telegramUser.first_name + ' ' + (telegramUser.last_name || '')).trim() 
+    const currentPlayerName = telegramUser
+        ? (telegramUser.first_name + ' ' + (telegramUser.last_name || '')).trim()
         : 'Вы';
     const currentPlayerId = telegramUser ? telegramUser.id.toString() : null;
-    const currentPlayer = { 
+    const currentPlayer = {
         id: currentPlayerId,
-        name: currentPlayerName, 
-        score: Math.floor(score), 
-        avatar: telegramUser ? getAvatarForUser(telegramUser) : '🐘', 
-        isMe: true 
+        name: currentPlayerName,
+        score: Math.floor(score),
+        avatar: telegramUser ? getAvatarForUser(telegramUser) : '🐘',
+        isMe: true
     };
-    
+
     // Объединяем и сортируем
     const combinedPlayers = [...allPlayers, currentPlayer];
     const sortedPlayers = combinedPlayers.sort((a, b) => b.score - a.score);
-    
+
     // Удаляем дубликаты текущего игрока по ID
     const uniquePlayers = [];
     const seenIds = new Set();
-    
+
     for (const player of sortedPlayers) {
         // Если это текущий игрок (по ID или по флагу isMe)
         if (player.isMe || (currentPlayerId && player.id === currentPlayerId)) {
@@ -377,10 +391,10 @@ async function renderLeaderboard() {
             uniquePlayers.push(player);
         }
     }
-    
+
     // Ограничиваем до топ-50 + текущий игрок
     const displayPlayers = uniquePlayers.slice(0, 51);
-    
+
     // Рендерим список
     leaderboardList.innerHTML = '';
     displayPlayers.forEach((player, index) => {
@@ -391,7 +405,7 @@ async function renderLeaderboard() {
         if (rank === 2) card.classList.add('top-2');
         if (rank === 3) card.classList.add('top-3');
         if (player.isMe) card.classList.add('leaderboard-me');
-        
+
         card.innerHTML = `
         <div class="leaderboard-rank">${rank}</div>
         <div class="leaderboard-avatar">${player.avatar}</div>
@@ -409,23 +423,23 @@ async function saveScoreToDatabase() {
     if (!supabase || SUPABASE_URL === 'YOUR_SUPABASE_URL' || !telegramUser) {
         return; // Supabase не настроен или пользователь не из Telegram
     }
-    
+
     try {
         const playerId = telegramUser.id.toString();
         const username = (telegramUser.first_name + ' ' + (telegramUser.last_name || '')).trim();
-        
+
         // Проверяем, существует ли уже игрок
         const { data: existingPlayer } = await supabase
             .from('players')
             .select('*')
             .eq('id', playerId)
             .single();
-        
+
         if (existingPlayer) {
             // Обновляем существующего игрока
             await supabase
                 .from('players')
-                .update({ 
+                .update({
                     score: Math.floor(score),
                     username: username,
                     first_name: telegramUser.first_name,
@@ -486,7 +500,7 @@ function completeSubscribeTask() {
 // Генерация реферального кода (используем ID пользователя или случайную строку)
 function getReferralCode() {
     if (referralCode) return referralCode;
-    
+
     if (telegramUser && telegramUser.id) {
         referralCode = 'ref_' + telegramUser.id;
     } else {
@@ -523,34 +537,34 @@ async function checkReferralOnStart() {
     if (!startParam || !supabase || SUPABASE_URL === 'YOUR_SUPABASE_URL') {
         return;
     }
-    
+
     try {
         // Извлекаем ID реферера из start_param (формат: ref_123456789)
         const referrerId = startParam.replace('ref_', '');
-        
+
         // Проверяем, не обрабатывали ли мы уже этот реферальный код
         const alreadyProcessed = localStorage.getItem('referral_processed_' + startParam);
         if (alreadyProcessed) {
             return;
         }
-        
+
         // Проверяем, существует ли реферер в базе
         const { data: referrer } = await supabase
             .from('players')
             .select('id')
             .eq('id', referrerId)
             .single();
-        
+
         if (referrer && telegramUser && telegramUser.id) {
             const currentUserId = telegramUser.id.toString();
-            
+
             // Проверяем, не был ли уже записан этот реферал
             const { data: existingReferral } = await supabase
                 .from('referrals')
                 .select('*')
                 .eq('referred_id', currentUserId)
                 .single();
-            
+
             if (!existingReferral) {
                 // Записываем реферала
                 await supabase
@@ -560,11 +574,11 @@ async function checkReferralOnStart() {
                         referred_id: currentUserId,
                         reward_given: false
                     }]);
-                
+
                 console.log('Реферал успешно записан:', referrerId, '->', currentUserId);
             }
         }
-        
+
         // Помечаем, что обработали этот реферальный код
         localStorage.setItem('referral_processed_' + startParam, 'true');
     } catch (e) {
@@ -578,33 +592,33 @@ async function completeInviteTask() {
         alert("Вы уже получили награду за это задание!");
         return;
     }
-    
+
     let newInvitedCount = invitedFriends;
     let rewardGiven = 0;
-    
+
     // Если есть Supabase, проверяем рефералов в базе
     if (supabase && SUPABASE_URL !== 'YOUR_SUPABASE_URL' && telegramUser) {
         try {
             const currentUserId = telegramUser.id.toString();
-            
+
             // Получаем всех рефералов текущего пользователя
             const { data: referrals, error } = await supabase
                 .from('referrals')
                 .select('*')
                 .eq('referrer_id', currentUserId);
-            
+
             if (error) {
                 console.error('Ошибка загрузки рефералов:', error);
             } else if (referrals) {
                 // Считаем количество рефералов, за которые еще не выдали награду
                 const newReferrals = referrals.filter(r => !r.reward_given);
-                
+
                 if (newReferrals.length > 0) {
                     const rewardPerFriend = 10000;
                     rewardGiven = newReferrals.length * rewardPerFriend;
                     score += rewardGiven;
                     newInvitedCount = referrals.length;
-                    
+
                     // Помечаем все рефералы как оплаченные
                     for (const referral of newReferrals) {
                         await supabase
@@ -612,7 +626,7 @@ async function completeInviteTask() {
                             .update({ reward_given: true })
                             .eq('id', referral.id);
                     }
-                    
+
                     taskInviteCompleted = true;
                     saveGame();
                     updateUI();
@@ -630,7 +644,7 @@ async function completeInviteTask() {
             return;
         }
     }
-    
+
     // Демо-режим (если нет Supabase) - показываем сообщение что нужна база данных
     alert('⚠️ Для работы реферальной системы необходимо настроить базу данных Supabase.\n\nВ демо-режиме награда не может быть начислена автоматически. Подключите Supabase для полноценной работы!');
 }
@@ -640,15 +654,15 @@ async function loadInvitedFriendsFromDB() {
     if (!supabase || SUPABASE_URL === 'YOUR_SUPABASE_URL' || !telegramUser) {
         return;
     }
-    
+
     try {
         const currentUserId = telegramUser.id.toString();
-        
+
         const { data: referrals, error } = await supabase
             .from('referrals')
             .select('*')
             .eq('referrer_id', currentUserId);
-        
+
         if (error) {
             console.error('Ошибка загрузки рефералов:', error);
         } else if (referrals) {
@@ -707,7 +721,7 @@ function renderTasks() {
 function updateTasksUI() {
     const taskButtons = document.querySelectorAll('#screen-tasks button');
     const taskLink = document.querySelector('#screen-tasks a');
-    
+
     // Обновляем кнопку подписки (первая кнопка)
     if (taskButtons.length > 0) {
         const subscribeButton = taskButtons[0];
@@ -720,12 +734,12 @@ function updateTasksUI() {
             subscribeButton.textContent = 'Сначала перейдите по ссылке';
         }
     }
-    
+
     // Обновляем кнопку приглашения друга (третья кнопка, если есть)
     if (taskButtons.length > 2) {
         const inviteShareButton = taskButtons[1];
         const inviteCompleteButton = taskButtons[2];
-        
+
         if (inviteCompleteButton) {
             inviteCompleteButton.disabled = taskInviteCompleted;
             if (taskInviteCompleted) {
@@ -737,7 +751,7 @@ function updateTasksUI() {
             }
         }
     }
-    
+
     // Ссылка не требует обновления в данном случае, но можно добавить стили, если посещена
     if (taskLink) {
         // taskLink.style.opacity = taskSubscribedVisited ? '0.7' : '1'; // Пример стилизации
@@ -801,6 +815,11 @@ document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'hidden') {
         saveScoreToDatabase();
     }
+});
+
+// Обновляем lastLoginTime при выходе из приложения
+window.addEventListener('beforeunload', () => {
+    localStorage.setItem('nl_lastLoginTime', Date.now());
 });
 
 // --- ОБРАБОТКА РЕФЕРАЛОВ ПРИ ЗАПУСКЕ ---
