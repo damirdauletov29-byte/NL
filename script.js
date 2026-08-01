@@ -11,11 +11,21 @@ let supabase;
 // Telegram WebApp
 const tg = window.Telegram?.WebApp;
 let telegramUser = null;
+let startParam = null; // Параметр start для реферальной системы
 
 if (tg) {
     tg.ready();
     tg.expand(); // Развернуть на весь экран
     telegramUser = tg.initDataUnsafe?.user || null;
+    
+    // Получаем параметр start из initData (для реферальной системы)
+    const initData = tg.initDataUnsafe;
+    if (initData && initData.start_param) {
+        startParam = initData.start_param;
+        console.log('Referral start_param:', startParam);
+        // Здесь можно добавить логику обработки реферального кода
+        // Например, сохранить кто пригласил пользователя
+    }
 }
 
 // Инициализация Supabase после загрузки страницы
@@ -44,6 +54,10 @@ const energyRegenSpeed = 3;
 // --- НОВЫЕ ПЕРЕМЕННЫЕ ДЛЯ ЗАДАНИЯ ПОДПИСКИ ---
 let taskSubscribedCompleted = localStorage.getItem('task_subscribed_completed') === 'true';
 let taskSubscribedVisited = localStorage.getItem('task_subscribed_visited') === 'true';
+// --- ПЕРЕМЕННЫЕ ДЛЯ РЕФЕРАЛЬНОЙ СИСТЕМЫ ---
+let taskInviteCompleted = localStorage.getItem('task_invite_completed') === 'true';
+let invitedFriends = parseInt(localStorage.getItem('invited_friends') || '0');
+let referralCode = localStorage.getItem('referral_code') || null;
 
 // Ранги
 const ranks = [
@@ -82,6 +96,10 @@ const savedUpgrades = localStorage.getItem('nl_upgrades');
 // --- ЗАГРУЗКА СТАТУСОВ ЗАДАНИЯ ---
 const savedTaskStatusCompleted = localStorage.getItem('task_subscribed_completed');
 const savedTaskStatusVisited = localStorage.getItem('task_subscribed_visited');
+// --- ЗАГРУЗКА РЕФЕРАЛЬНОЙ СИСТЕМЫ ---
+const savedTaskInviteCompleted = localStorage.getItem('task_invite_completed');
+const savedInvitedFriends = localStorage.getItem('invited_friends');
+const savedReferralCode = localStorage.getItem('referral_code');
 if (savedScore) score = parseInt(savedScore);
 if (savedEnergy) energy = parseInt(savedEnergy);
 if (savedProfit) profitPerHour = parseInt(savedProfit);
@@ -94,6 +112,9 @@ if (upgrades[index]) upgrades[index].level = saved.level;
 }
 if (savedTaskStatusCompleted) taskSubscribedCompleted = savedTaskStatusCompleted === 'true';
 if (savedTaskStatusVisited) taskSubscribedVisited = savedTaskStatusVisited === 'true';
+if (savedTaskInviteCompleted) taskInviteCompleted = savedTaskInviteCompleted === 'true';
+if (savedInvitedFriends) invitedFriends = parseInt(savedInvitedFriends);
+if (savedReferralCode) referralCode = savedReferralCode;
 }
 function saveGame() {
 localStorage.setItem('nl_score', score);
@@ -104,6 +125,10 @@ localStorage.setItem('nl_upgrades', JSON.stringify(upgrades.map(u => ({ id: u.id
 // --- СОХРАНЕНИЕ СТАТУСОВ ЗАДАНИЯ ---
 localStorage.setItem('task_subscribed_completed', taskSubscribedCompleted);
 localStorage.setItem('task_subscribed_visited', taskSubscribedVisited);
+// --- СОХРАНЕНИЕ РЕФЕРАЛЬНОЙ СИСТЕМЫ ---
+localStorage.setItem('task_invite_completed', taskInviteCompleted);
+localStorage.setItem('invited_friends', invitedFriends);
+localStorage.setItem('referral_code', referralCode);
 }
 
 // Элементы DOM
@@ -456,6 +481,62 @@ function completeSubscribeTask() {
     alert(`Поздравляем! Вы получили ${reward} голосов за подписку на канал @partynewpeople!`);
 }
 
+// --- ФУНКЦИИ ДЛЯ РЕФЕРАЛЬНОЙ СИСТЕМЫ ---
+
+// Генерация реферального кода (используем ID пользователя или случайную строку)
+function getReferralCode() {
+    if (referralCode) return referralCode;
+    
+    if (telegramUser && telegramUser.id) {
+        referralCode = 'ref_' + telegramUser.id;
+    } else {
+        // Генерируем случайный код
+        referralCode = 'ref_' + Math.random().toString(36).substring(2, 10);
+    }
+    saveGame();
+    return referralCode;
+}
+
+// Создание реферальной ссылки для Telegram
+function getReferralLink() {
+    const code = getReferralCode();
+    const botUsername = 'YourBotUsername'; // Замените на имя вашего бота
+    return `https://t.me/${botUsername}?start=${code}`;
+}
+
+// Приглашение друга через Telegram WebApp
+function inviteFriend() {
+    if (tg && tg.SwitchInlineQuery) {
+        // Используем встроенную функцию Telegram для шаринга
+        const referralLink = getReferralLink();
+        tg.switchInlineQuery(`Приглашаю тебя в игру "Тапай за Новых"! 🐘\nЗарабатывай голоса и получай крутые награды!\n\nМоя реферальная ссылка: ${referralLink}`);
+    } else {
+        // Альтернативный способ - открыть окно шеринга
+        const referralLink = getReferralLink();
+        const shareText = encodeURIComponent(`Приглашаю тебя в игру "Тапай за Новых"! 🐘\nЗарабатывай голоса и получай крутые награды!\n\nТвоя ссылка: ${referralLink}`);
+        window.open(`https://t.me/share/url?url=${encodeURIComponent(referralLink)}&text=${shareText}`, '_blank');
+    }
+}
+
+// Проверка и начисление награды за приглашение друга
+function completeInviteTask() {
+    if (taskInviteCompleted) {
+        alert("Вы уже получили награду за приглашение друга!");
+        return;
+    }
+    
+    // Проверяем, есть ли приглашенные друзья (в демо-режиме просто даем награду)
+    // В реальной реализации здесь будет проверка из базы данных
+    const reward = 10000;
+    score += reward;
+    invitedFriends += 1;
+    taskInviteCompleted = true;
+    saveGame();
+    updateUI();
+    updateTasksUI();
+    alert(`Поздравляем! Вы пригласили друга и получили ${reward} голосов!`);
+}
+
 // Функция для отображения заданий (заменяет заглушку)
 function renderTasks() {
     const tasksContainer = document.querySelector('#screen-tasks .placeholder-content'); // Найдем контейнер внутри экрана задач
@@ -464,9 +545,10 @@ function renderTasks() {
     // Очистим контейнер задач, если он не пуст (например, если туда была вставлена заглушка)
     tasksContainer.innerHTML = '<h2>💼 Поручения</h2>'; // Оставим заголовок
 
-    const taskDiv = document.createElement('div');
-    taskDiv.className = 'task-item'; // Добавьте класс для стилизации, если нужно
-    taskDiv.innerHTML = `
+    // Задание 1: Подписка на канал
+    const subscribeTaskDiv = document.createElement('div');
+    subscribeTaskDiv.className = 'task-item';
+    subscribeTaskDiv.innerHTML = `
         <h3>Подписаться на канал @partynewpeople</h3>
         <p>Подпишитесь на наш официальный канал и получите награду!</p>
         <p>Награда: 5000 голосов</p>
@@ -475,26 +557,61 @@ function renderTasks() {
         </button>
         <a href="#" onclick="event.preventDefault(); markLinkVisited();">Перейти к каналу</a>
     `;
-    tasksContainer.appendChild(taskDiv);
+    tasksContainer.appendChild(subscribeTaskDiv);
+
+    // Задание 2: Пригласить друга
+    const inviteTaskDiv = document.createElement('div');
+    inviteTaskDiv.className = 'task-item';
+    const referralLink = getReferralLink();
+    inviteTaskDiv.innerHTML = `
+        <h3>👥 Пригласить друга</h3>
+        <p>Пригласи друга в игру "Тапай за Новых" и получи бонус!</p>
+        <p>Награда: 10000 голосов за каждого друга</p>
+        <p style="font-size: 11px; opacity: 0.7; margin-top: 5px;">Приглашено друзей: ${invitedFriends}</p>
+        <p style="font-size: 10px; opacity: 0.5; margin-top: 3px; word-break: break-all;">${referralLink}</p>
+        <button onclick="inviteFriend()" style="margin-top: 8px; background: #00ffcc;">📤 Поделиться ссылкой</button>
+        <button onclick="completeInviteTask()" ${taskInviteCompleted ? 'disabled' : ''} style="margin-top: 5px;">
+            ${taskInviteCompleted ? 'Награда получена!' : 'Получить награду (Демо: +1 друг)'}
+        </button>
+    `;
+    tasksContainer.appendChild(inviteTaskDiv);
 
     // Здесь можно добавить другие задания аналогично в будущем
 }
 
 // Функция для обновления UI заданий (например, кнопки)
 function updateTasksUI() {
-    const taskButton = document.querySelector('#screen-tasks button');
+    const taskButtons = document.querySelectorAll('#screen-tasks button');
     const taskLink = document.querySelector('#screen-tasks a');
-    if (taskButton) {
-        // Кнопка неактивна, если задание выполнено ИЛИ если ссылка не посещена, но задание не выполнено
-        taskButton.disabled = taskSubscribedCompleted || (!taskSubscribedVisited && !taskSubscribedCompleted);
+    
+    // Обновляем кнопку подписки (первая кнопка)
+    if (taskButtons.length > 0) {
+        const subscribeButton = taskButtons[0];
+        subscribeButton.disabled = taskSubscribedCompleted || (!taskSubscribedVisited && !taskSubscribedCompleted);
         if (taskSubscribedCompleted) {
-            taskButton.textContent = 'Выполнено!';
+            subscribeButton.textContent = 'Выполнено!';
         } else if (taskSubscribedVisited) {
-            taskButton.textContent = 'Получить награду';
+            subscribeButton.textContent = 'Получить награду';
         } else {
-            taskButton.textContent = 'Сначала перейдите по ссылке';
+            subscribeButton.textContent = 'Сначала перейдите по ссылке';
         }
     }
+    
+    // Обновляем кнопку приглашения друга (третья кнопка, если есть)
+    if (taskButtons.length > 2) {
+        const inviteShareButton = taskButtons[1];
+        const inviteCompleteButton = taskButtons[2];
+        
+        if (inviteCompleteButton) {
+            inviteCompleteButton.disabled = taskInviteCompleted;
+            if (taskInviteCompleted) {
+                inviteCompleteButton.textContent = 'Награда получена!';
+            } else {
+                inviteCompleteButton.textContent = 'Получить награду (Демо: +1 друг)';
+            }
+        }
+    }
+    
     // Ссылка не требует обновления в данном случае, но можно добавить стили, если посещена
     if (taskLink) {
         // taskLink.style.opacity = taskSubscribedVisited ? '0.7' : '1'; // Пример стилизации
