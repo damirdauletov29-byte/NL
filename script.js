@@ -617,24 +617,22 @@ async function completeInviteTask() {
                     saveGame();
                     updateUI();
                     updateTasksUI();
-                    alert(`Поздравляем! Вы пригласили ${newReferrals.length} друг(а/ей) и получили ${rewardGiven} голосов!`);
+                    alert(`🎉 Поздравляем! Вы пригласили ${newReferrals.length} друг(а/ей) и получили ${rewardGiven.toLocaleString()} голосов!`);
+                    return;
+                } else {
+                    alert('❌ У вас пока нет новых приглашенных друзей. Отправьте ссылку другу и дождитесь, пока он начнет играть!');
                     return;
                 }
             }
         } catch (e) {
             console.error('Ошибка проверки рефералов:', e);
+            alert('Ошибка проверки рефералов. Попробуйте позже.');
+            return;
         }
     }
     
-    // Демо-режим (если нет Supabase или нет новых рефералов)
-    alert("В демо-режиме награда начисляется автоматически. В полной версии нужно пригласить реального друга!");
-    const reward = 10000;
-    score += reward;
-    invitedFriends += 1;
-    taskInviteCompleted = true;
-    saveGame();
-    updateUI();
-    updateTasksUI();
+    // Демо-режим (если нет Supabase) - показываем сообщение что нужна база данных
+    alert('⚠️ Для работы реферальной системы необходимо настроить базу данных Supabase.\n\nВ демо-режиме награда не может быть начислена автоматически. Подключите Supabase для полноценной работы!');
 }
 
 // Загрузка количества приглашенных друзей из базы
@@ -696,8 +694,8 @@ function renderTasks() {
         <p style="font-size: 11px; opacity: 0.7; margin-top: 5px;">Приглашено друзей: ${invitedFriends}</p>
         <p style="font-size: 10px; opacity: 0.5; margin-top: 3px; word-break: break-all;">${referralLink}</p>
         <button onclick="inviteFriend()" style="margin-top: 8px; background: #00ffcc;">📤 Поделиться ссылкой</button>
-        <button onclick="completeInviteTask()" ${taskInviteCompleted ? 'disabled' : ''} style="margin-top: 5px;">
-            ${taskInviteCompleted ? 'Награда получена!' : 'Получить награду (Демо: +1 друг)'}
+        <button onclick="completeInviteTask()" ${taskInviteCompleted ? 'disabled' : ''} style="margin-top: 5px; background: ${taskInviteCompleted ? '#cccccc' : '#4CAF50'};">
+            ${taskInviteCompleted ? '✅ Награда получена!' : '💰 Проверить и получить награду'}
         </button>
     `;
     tasksContainer.appendChild(inviteTaskDiv);
@@ -731,9 +729,11 @@ function updateTasksUI() {
         if (inviteCompleteButton) {
             inviteCompleteButton.disabled = taskInviteCompleted;
             if (taskInviteCompleted) {
-                inviteCompleteButton.textContent = 'Награда получена!';
+                inviteCompleteButton.textContent = '✅ Награда получена!';
+                inviteCompleteButton.style.background = '#cccccc';
             } else {
-                inviteCompleteButton.textContent = 'Получить награду (Демо: +1 друг)';
+                inviteCompleteButton.textContent = '💰 Проверить и получить награду';
+                inviteCompleteButton.style.background = '#4CAF50';
             }
         }
     }
