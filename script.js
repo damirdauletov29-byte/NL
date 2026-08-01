@@ -317,7 +317,9 @@ async function renderLeaderboard() {
     const currentPlayerName = telegramUser 
         ? (telegramUser.first_name + ' ' + (telegramUser.last_name || '')).trim() 
         : 'Вы';
+    const currentPlayerId = telegramUser ? telegramUser.id.toString() : null;
     const currentPlayer = { 
+        id: currentPlayerId,
         name: currentPlayerName, 
         score: Math.floor(score), 
         avatar: telegramUser ? getAvatarForUser(telegramUser) : '🐘', 
@@ -328,19 +330,25 @@ async function renderLeaderboard() {
     const combinedPlayers = [...allPlayers, currentPlayer];
     const sortedPlayers = combinedPlayers.sort((a, b) => b.score - a.score);
     
-    // Удаляем дубликаты текущего игрока (если он уже есть в базе)
+    // Удаляем дубликаты текущего игрока по ID
     const uniquePlayers = [];
     const seenIds = new Set();
+    
     for (const player of sortedPlayers) {
-        if (player.isMe) {
+        // Если это текущий игрок (по ID или по флагу isMe)
+        if (player.isMe || (currentPlayerId && player.id === currentPlayerId)) {
+            // Добавляем только один раз с флагом isMe
             if (!seenIds.has('me')) {
-                uniquePlayers.push(player);
+                const mePlayer = { ...player, isMe: true };
+                uniquePlayers.push(mePlayer);
                 seenIds.add('me');
             }
         } else if (player.id && !seenIds.has(player.id)) {
+            // Другие игроки - по их ID
             uniquePlayers.push(player);
             seenIds.add(player.id);
         } else if (!player.id) {
+            // Демо-игроки без ID
             uniquePlayers.push(player);
         }
     }
