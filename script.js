@@ -36,11 +36,14 @@ async function initSupabase() {
             const { createClient } = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm');
             supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
             console.log('Supabase успешно подключен');
+            return true;
         } catch (e) {
             console.log('Не удалось подключить Supabase:', e.message);
+            return false;
         }
     } else {
         console.log('Supabase не настроен. Используйте демо-режим.');
+        return false;
     }
 }
 
@@ -319,12 +322,13 @@ async function renderLeaderboard() {
     leaderboardList.innerHTML = '<p style="text-align:center; opacity:0.7;">Загрузка...</p>';
 
     let allPlayers = [];
+    let useDemoData = false;
 
     // Пытаемся загрузить данные из Supabase
     if (supabase && SUPABASE_URL !== 'YOUR_SUPABASE_URL') {
         try {
             // Загружаем топ игроков
-            const {  topPlayers, error } = await supabase
+            const { data: topPlayers, error } = await supabase
                 .from('players')
                 .select('*')
                 .order('score', { ascending: false })
@@ -332,7 +336,8 @@ async function renderLeaderboard() {
 
             if (error) {
                 console.error('Ошибка загрузки рейтинга:', error);
-            } else if (topPlayers) {
+                useDemoData = true;
+            } else if (topPlayers && topPlayers.length > 0) {
                 allPlayers = topPlayers.map(p => ({
                     id: p.id,
                     name: p.username || p.first_name || 'Игрок',
@@ -340,14 +345,22 @@ async function renderLeaderboard() {
                     avatar: getAvatarForUser(p),
                     isMe: false
                 }));
+                console.log(`Загружено ${allPlayers.length} игроков из базы данных`);
+            } else {
+                console.log('В базе данных пока нет игроков');
+                useDemoData = true;
             }
         } catch (e) {
-            console.log('Не удалось загрузить рейтинг из базы, используем демо-режим');
+            console.log('Не удалось загрузить рейтинг из базы, используем демо-режим:', e.message);
+            useDemoData = true;
         }
+    } else {
+        console.log('Supabase не настроен, используем демо-режим');
+        useDemoData = true;
     }
 
     // Если данных нет или Supabase не настроен, используем демо-данные
-    if (allPlayers.length === 0) {
+    if (useDemoData && allPlayers.length === 0) {
         const leaderboardData = [
             { name: "Алексей М.", score: 2500000, avatar: "🦁" },
             { name: "Дмитрий К.", score: 1800000, avatar: "🐯" },
@@ -361,6 +374,7 @@ async function renderLeaderboard() {
             { name: "Павел Г.", score: 95000, avatar: "🐙" }
         ];
         allPlayers = leaderboardData.map(p => ({ ...p, isMe: false }));
+        console.log('Используется демо-рейтинг (в базе нет данных)');
     }
 
     // Добавляем текущего игрока
@@ -440,15 +454,20 @@ async function saveScoreToDatabase() {
         const username = (telegramUser.first_name + ' ' + (telegramUser.last_name || '')).trim();
 
         // Проверяем, существует ли уже игрок
-        const {  existingPlayer } = await supabase
+        const { data: existingPlayer, error: fetchError } = await supabase
             .from('players')
             .select('*')
             .eq('id', playerId)
             .single();
 
+        if (fetchError && fetchError.code !== 'PGRST116') { // PGRST116 - ошибка "no rows found"
+            console.error('Ошибка проверки игрока:', fetchError);
+            return;
+        }
+
         if (existingPlayer) {
             // Обновляем существующего игрока
-            await supabase
+            const { error: updateError } = await supabase
                 .from('players')
                 .update({
                     score: Math.floor(score),
@@ -458,9 +477,15 @@ async function saveScoreToDatabase() {
                     updated_at: new Date().toISOString()
                 })
                 .eq('id', playerId);
+
+            if (updateError) {
+                console.error('Ошибка обновления игрока:', updateError);
+            } else {
+                console.log(`Счет сохранен: ${Math.floor(score)} голосов`);
+            }
         } else {
             // Создаем нового игрока
-            await supabase
+            const { error: insertError } = await supabase
                 .from('players')
                 .insert([{
                     id: playerId,
@@ -471,6 +496,12 @@ async function saveScoreToDatabase() {
                     created_at: new Date().toISOString(),
                     updated_at: new Date().toISOString()
                 }]);
+
+            if (insertError) {
+                console.error('Ошибка создания игрока:', insertError);
+            } else {
+                console.log(`Новый игрок создан: ${username} со счетом ${Math.floor(score)}`);
+            }
         }
     } catch (e) {
         console.error('Ошибка сохранения в базу:', e);
@@ -560,7 +591,7 @@ async function checkReferralOnStart() {
         }
 
         // Проверяем, существует ли реферер в базе
-        const {  referrer } = await supabase
+        const { data: referrer } = await supabase
             .from('players')
             .select('id')
             .eq('id', referrerId)
@@ -570,7 +601,7 @@ async function checkReferralOnStart() {
             const currentUserId = telegramUser.id.toString();
 
             // Проверяем, не был ли уже записан этот реферал
-            const {  existingReferral } = await supabase
+            const { data: existingReferral } = await supabase
                 .from('referrals')
                 .select('*')
                 .eq('referred_id', currentUserId)
@@ -613,7 +644,7 @@ async function completeInviteTask() {
             const currentUserId = telegramUser.id.toString();
 
             // Получаем всех рефералов текущего пользователя
-            const {  referrals, error } = await supabase
+            const { data: referrals, error } = await supabase
                 .from('referrals')
                 .select('*')
                 .eq('referrer_id', currentUserId);
@@ -669,7 +700,7 @@ async function loadInvitedFriendsFromDB() {
     try {
         const currentUserId = telegramUser.id.toString();
 
-        const {  referrals, error } = await supabase
+        const { data: referrals, error } = await supabase
             .from('referrals')
             .select('*')
             .eq('referrer_id', currentUserId);
@@ -809,7 +840,12 @@ loadGame();
 updateUI();
 
 // Инициализация Supabase при запуске
-initSupabase();
+initSupabase().then(() => {
+    // После инициализации Supabase сразу сохраняем счет в базу
+    if (supabase && telegramUser) {
+        saveScoreToDatabase();
+    }
+});
 
 // Периодическое сохранение в базу данных (каждые 5 секунд)
 setInterval(() => {
