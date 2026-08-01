@@ -500,7 +500,7 @@ function getReferralCode() {
 // Создание реферальной ссылки для Telegram
 function getReferralLink() {
     const code = getReferralCode();
-    const botUsername = 'YourBotUsername'; // Замените на имя вашего бота
+    const botUsername = 'NewPeopleGameBot'; // Замените на имя вашего бота
     return `https://t.me/${botUsername}?start=${code}`;
 }
 
