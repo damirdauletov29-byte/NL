@@ -1,8 +1,7 @@
-
 // КОНФИГУРАЦИЯ SUPABASE ДЛЯ ТАБЛИЦЫ PLAYERS
 // Скопируйте этот SQL код и выполните его в Supabase SQL Editor:
 /*
-CREATE TABLE players (
+CREATE TABLE IF NOT EXISTS players (
     id TEXT PRIMARY KEY, -- ID пользователя Telegram
     score INTEGER DEFAULT 0,
     username TEXT,
@@ -14,28 +13,37 @@ CREATE TABLE players (
 );
 
 -- Создаем индекс для быстрой сортировки по очкам
-CREATE INDEX idx_players_score ON players(score DESC);
+CREATE INDEX IF NOT EXISTS idx_players_score ON players(score DESC);
 
 -- Индекс для поиска по рефереру
-CREATE INDEX idx_players_referred_by ON players(referred_by);
+CREATE INDEX IF NOT EXISTS idx_players_referred_by ON players(referred_by);
 
 -- Настраиваем RLS (Row Level Security) для безопасности
 ALTER TABLE players ENABLE ROW LEVEL SECURITY;
 
 -- Разрешаем всем читать данные (для рейтинга)
-CREATE POLICY "Все могут читать рейтинг" ON players
-    FOR SELECT USING (true);
+DO $$ BEGIN
+    CREATE POLICY "Все могут читать рейтинг" ON players
+        FOR SELECT USING (true);
+EXCEPTION WHEN duplicate_object THEN null;
+END $$;
 
 -- Разрешаем пользователям обновлять только свои записи
-CREATE POLICY "Пользователи могут обновлять свои записи" ON players
-    FOR UPDATE USING (true);
+DO $$ BEGIN
+    CREATE POLICY "Пользователи могут обновлять свои записи" ON players
+        FOR UPDATE USING (true);
+EXCEPTION WHEN duplicate_object THEN null;
+END $$;
 
 -- Разрешаем пользователям создавать свои записи
-CREATE POLICY "Пользователи могут создавать свои записи" ON players
-    FOR INSERT WITH CHECK (true);
+DO $$ BEGIN
+    CREATE POLICY "Пользователи могут создавать свои записи" ON players
+        FOR INSERT WITH CHECK (true);
+EXCEPTION WHEN duplicate_object THEN null;
+END $$;
 
 -- Таблица для отслеживания рефералов
-CREATE TABLE referrals (
+CREATE TABLE IF NOT EXISTS referrals (
     id SERIAL PRIMARY KEY,
     referrer_id TEXT NOT NULL, -- Кто пригласил
     referred_id TEXT NOT NULL, -- Кого пригласили
@@ -46,12 +54,30 @@ CREATE TABLE referrals (
 );
 
 -- Индекс для быстрого поиска рефералов
-CREATE INDEX idx_referrals_referrer ON referrals(referrer_id);
+CREATE INDEX IF NOT EXISTS idx_referrals_referrer ON referrals(referrer_id);
+CREATE INDEX IF NOT EXISTS idx_referrals_referred ON referrals(referred_id);
 
 -- RLS для таблицы referrals
 ALTER TABLE referrals ENABLE ROW LEVEL SECURITY;
 
 -- Разрешаем читать свои рефералы
-CREATE POLICY "Пользователи могут читать свои рефералы" ON referrals
-    FOR SELECT USING (referrer_id = current_setting('app.current_user_id', TRUE));
+DO $$ BEGIN
+    CREATE POLICY "Пользователи могут читать свои рефералы" ON referrals
+        FOR SELECT USING (true);
+EXCEPTION WHEN duplicate_object THEN null;
+END $$;
+
+-- Разрешаем создавать записи о рефералах
+DO $$ BEGIN
+    CREATE POLICY "Создание записей о рефералах" ON referrals
+        FOR INSERT WITH CHECK (true);
+EXCEPTION WHEN duplicate_object THEN null;
+END $$;
+
+-- Разрешаем обновлять записи о рефералах (для отметки о выдаче награды)
+DO $$ BEGIN
+    CREATE POLICY "Обновление записей о рефералах" ON referrals
+        FOR UPDATE USING (true);
+EXCEPTION WHEN duplicate_object THEN null;
+END $$;
 */

@@ -506,7 +506,7 @@ function getReferralLink() {
 
 // Приглашение друга через Telegram WebApp
 function inviteFriend() {
-    if (tg && tg.SwitchInlineQuery) {
+    if (tg && tg.switchInlineQuery) {
         // Используем встроенную функцию Telegram для шаринга
         const referralLink = getReferralLink();
         tg.switchInlineQuery(`Приглашаю тебя в игру "Тапай за Новых"! 🐘\nЗарабатывай голоса и получай крутые награды!\n\nМоя реферальная ссылка: ${referralLink}`);
@@ -518,15 +518,116 @@ function inviteFriend() {
     }
 }
 
-// Проверка и начисление награды за приглашение друга
-function completeInviteTask() {
-    if (taskInviteCompleted) {
-        alert("Вы уже получили награду за приглашение друга!");
+// Проверка реферального кода при старте (кто пригласил текущего пользователя)
+async function checkReferralOnStart() {
+    if (!startParam || !supabase || SUPABASE_URL === 'YOUR_SUPABASE_URL') {
         return;
     }
     
-    // Проверяем, есть ли приглашенные друзья (в демо-режиме просто даем награду)
-    // В реальной реализации здесь будет проверка из базы данных
+    try {
+        // Извлекаем ID реферера из start_param (формат: ref_123456789)
+        const referrerId = startParam.replace('ref_', '');
+        
+        // Проверяем, не обрабатывали ли мы уже этот реферальный код
+        const alreadyProcessed = localStorage.getItem('referral_processed_' + startParam);
+        if (alreadyProcessed) {
+            return;
+        }
+        
+        // Проверяем, существует ли реферер в базе
+        const { data: referrer } = await supabase
+            .from('players')
+            .select('id')
+            .eq('id', referrerId)
+            .single();
+        
+        if (referrer && telegramUser && telegramUser.id) {
+            const currentUserId = telegramUser.id.toString();
+            
+            // Проверяем, не был ли уже записан этот реферал
+            const { data: existingReferral } = await supabase
+                .from('referrals')
+                .select('*')
+                .eq('referred_id', currentUserId)
+                .single();
+            
+            if (!existingReferral) {
+                // Записываем реферала
+                await supabase
+                    .from('referrals')
+                    .insert([{
+                        referrer_id: referrerId,
+                        referred_id: currentUserId,
+                        reward_given: false
+                    }]);
+                
+                console.log('Реферал успешно записан:', referrerId, '->', currentUserId);
+            }
+        }
+        
+        // Помечаем, что обработали этот реферальный код
+        localStorage.setItem('referral_processed_' + startParam, 'true');
+    } catch (e) {
+        console.error('Ошибка обработки реферального кода:', e);
+    }
+}
+
+// Проверка и начисление награды за приглашение друга
+async function completeInviteTask() {
+    if (taskInviteCompleted) {
+        alert("Вы уже получили награду за это задание!");
+        return;
+    }
+    
+    let newInvitedCount = invitedFriends;
+    let rewardGiven = 0;
+    
+    // Если есть Supabase, проверяем рефералов в базе
+    if (supabase && SUPABASE_URL !== 'YOUR_SUPABASE_URL' && telegramUser) {
+        try {
+            const currentUserId = telegramUser.id.toString();
+            
+            // Получаем всех рефералов текущего пользователя
+            const { data: referrals, error } = await supabase
+                .from('referrals')
+                .select('*')
+                .eq('referrer_id', currentUserId);
+            
+            if (error) {
+                console.error('Ошибка загрузки рефералов:', error);
+            } else if (referrals) {
+                // Считаем количество рефералов, за которые еще не выдали награду
+                const newReferrals = referrals.filter(r => !r.reward_given);
+                
+                if (newReferrals.length > 0) {
+                    const rewardPerFriend = 10000;
+                    rewardGiven = newReferrals.length * rewardPerFriend;
+                    score += rewardGiven;
+                    newInvitedCount = referrals.length;
+                    
+                    // Помечаем все рефералы как оплаченные
+                    for (const referral of newReferrals) {
+                        await supabase
+                            .from('referrals')
+                            .update({ reward_given: true })
+                            .eq('id', referral.id);
+                    }
+                    
+                    taskInviteCompleted = true;
+                    saveGame();
+                    updateUI();
+                    updateTasksUI();
+                    alert(`Поздравляем! Вы пригласили ${newReferrals.length} друг(а/ей) и получили ${rewardGiven} голосов!`);
+                    return;
+                }
+            }
+        } catch (e) {
+            console.error('Ошибка проверки рефералов:', e);
+        }
+    }
+    
+    // Демо-режим (если нет Supabase или нет новых рефералов)
+    alert("В демо-режиме награда начисляется автоматически. В полной версии нужно пригласить реального друга!");
     const reward = 10000;
     score += reward;
     invitedFriends += 1;
@@ -534,7 +635,32 @@ function completeInviteTask() {
     saveGame();
     updateUI();
     updateTasksUI();
-    alert(`Поздравляем! Вы пригласили друга и получили ${reward} голосов!`);
+}
+
+// Загрузка количества приглашенных друзей из базы
+async function loadInvitedFriendsFromDB() {
+    if (!supabase || SUPABASE_URL === 'YOUR_SUPABASE_URL' || !telegramUser) {
+        return;
+    }
+    
+    try {
+        const currentUserId = telegramUser.id.toString();
+        
+        const { data: referrals, error } = await supabase
+            .from('referrals')
+            .select('*')
+            .eq('referrer_id', currentUserId);
+        
+        if (error) {
+            console.error('Ошибка загрузки рефералов:', error);
+        } else if (referrals) {
+            invitedFriends = referrals.length;
+            saveGame();
+            updateTasksUI();
+        }
+    } catch (e) {
+        console.error('Ошибка загрузки рефералов:', e);
+    }
 }
 
 // Функция для отображения заданий (заменяет заглушку)
@@ -676,3 +802,10 @@ document.addEventListener('visibilitychange', () => {
         saveScoreToDatabase();
     }
 });
+
+// --- ОБРАБОТКА РЕФЕРАЛОВ ПРИ ЗАПУСКЕ ---
+// Проверяем, пришел ли пользователь по реферальной ссылке
+setTimeout(() => {
+    checkReferralOnStart();
+    loadInvitedFriendsFromDB();
+}, 1000);
