@@ -3,8 +3,8 @@
 // 2. Создайте новый проект
 // 3. В Settings -> API скопируйте Project URL и anon/public key
 // 4. Вставьте их ниже:
-const SUPABASE_URL = 'YOUR_SUPABASE_URL'; // Например: 'https://xxxxx.supabase.co'
-const SUPABASE_KEY = 'YOUR_SUPABASE_KEY'; // Начинается с 'eyJ...'
+const SUPABASE_URL = 'https://fncfdimmmlqwjbsslntk.supabase.co'; // Например: 'https://xxxxx.supabase.co'
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZuY2ZkaW1tbWxxd2pic3NsbnRrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU1MzIzOTEsImV4cCI6MjEwMTEwODM5MX0.HoSvbTqGio8mSWCYf17o4c1FQd9C-Na8TGwWo_GmBTI'; // Начинается с 'eyJ...'
 
 let supabase;
 
