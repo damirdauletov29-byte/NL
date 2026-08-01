@@ -68,7 +68,7 @@ const ranks = [
 { name: "Организатор", minScore: 10000, icon: "🤝" },
 { name: "Лидер ячейки", minScore: 50000, icon: "⭐" },
 { name: "Политик", minScore: 150000, icon: "🏛️" },
-{ name: "Лидер движения", minScore: 1000000, icon: "狮子" }
+{ name: "Лидер движения", minScore: 1000000, icon: "👑" }
 ];
 // База данных улучшений
 const upgrades = [
